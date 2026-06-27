@@ -115,7 +115,7 @@ export const updateDocument = createServerFn({ method: "POST" })
     const { id, ...rest } = data;
     const update: Record<string, any> = {};
     for (const [k, v] of Object.entries(rest)) if (v !== undefined) update[k] = v;
-    const { error } = await context.supabase.from("documents").update(update).eq("id", id);
+    const { error } = await context.supabase.from("documents").update(update as any).eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
