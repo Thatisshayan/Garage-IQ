@@ -9,61 +9,384 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedVehiclesIndexRouteImport } from './routes/_authenticated/vehicles/index'
+import { Route as AuthenticatedSearchIndexRouteImport } from './routes/_authenticated/search/index'
+import { Route as AuthenticatedReviewQueueIndexRouteImport } from './routes/_authenticated/review-queue/index'
+import { Route as AuthenticatedJobsIndexRouteImport } from './routes/_authenticated/jobs/index'
+import { Route as AuthenticatedInvoicesIndexRouteImport } from './routes/_authenticated/invoices/index'
+import { Route as AuthenticatedDocumentsIndexRouteImport } from './routes/_authenticated/documents/index'
+import { Route as AuthenticatedCustomersIndexRouteImport } from './routes/_authenticated/customers/index'
+import { Route as AuthenticatedClaimsIndexRouteImport } from './routes/_authenticated/claims/index'
+import { Route as AuthenticatedAssistantIndexRouteImport } from './routes/_authenticated/assistant/index'
+import { Route as AuthenticatedJobsNewRouteImport } from './routes/_authenticated/jobs/new'
+import { Route as AuthenticatedJobsJobIdRouteImport } from './routes/_authenticated/jobs/$jobId'
+import { Route as AuthenticatedDocumentsDocIdRouteImport } from './routes/_authenticated/documents/$docId'
+import { Route as AuthenticatedCustomersCustomerIdRouteImport } from './routes/_authenticated/customers/$customerId'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedVehiclesIndexRoute =
+  AuthenticatedVehiclesIndexRouteImport.update({
+    id: '/vehicles/',
+    path: '/vehicles/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSearchIndexRoute =
+  AuthenticatedSearchIndexRouteImport.update({
+    id: '/search/',
+    path: '/search/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedReviewQueueIndexRoute =
+  AuthenticatedReviewQueueIndexRouteImport.update({
+    id: '/review-queue/',
+    path: '/review-queue/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedJobsIndexRoute = AuthenticatedJobsIndexRouteImport.update({
+  id: '/jobs/',
+  path: '/jobs/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedInvoicesIndexRoute =
+  AuthenticatedInvoicesIndexRouteImport.update({
+    id: '/invoices/',
+    path: '/invoices/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDocumentsIndexRoute =
+  AuthenticatedDocumentsIndexRouteImport.update({
+    id: '/documents/',
+    path: '/documents/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCustomersIndexRoute =
+  AuthenticatedCustomersIndexRouteImport.update({
+    id: '/customers/',
+    path: '/customers/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedClaimsIndexRoute =
+  AuthenticatedClaimsIndexRouteImport.update({
+    id: '/claims/',
+    path: '/claims/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAssistantIndexRoute =
+  AuthenticatedAssistantIndexRouteImport.update({
+    id: '/assistant/',
+    path: '/assistant/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedJobsNewRoute = AuthenticatedJobsNewRouteImport.update({
+  id: '/jobs/new',
+  path: '/jobs/new',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedJobsJobIdRoute = AuthenticatedJobsJobIdRouteImport.update({
+  id: '/jobs/$jobId',
+  path: '/jobs/$jobId',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDocumentsDocIdRoute =
+  AuthenticatedDocumentsDocIdRouteImport.update({
+    id: '/documents/$docId',
+    path: '/documents/$docId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCustomersCustomerIdRoute =
+  AuthenticatedCustomersCustomerIdRouteImport.update({
+    id: '/customers/$customerId',
+    path: '/customers/$customerId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/auth': typeof AuthRoute
+  '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
+  '/documents/$docId': typeof AuthenticatedDocumentsDocIdRoute
+  '/jobs/$jobId': typeof AuthenticatedJobsJobIdRoute
+  '/jobs/new': typeof AuthenticatedJobsNewRoute
+  '/assistant/': typeof AuthenticatedAssistantIndexRoute
+  '/claims/': typeof AuthenticatedClaimsIndexRoute
+  '/customers/': typeof AuthenticatedCustomersIndexRoute
+  '/documents/': typeof AuthenticatedDocumentsIndexRoute
+  '/invoices/': typeof AuthenticatedInvoicesIndexRoute
+  '/jobs/': typeof AuthenticatedJobsIndexRoute
+  '/review-queue/': typeof AuthenticatedReviewQueueIndexRoute
+  '/search/': typeof AuthenticatedSearchIndexRoute
+  '/vehicles/': typeof AuthenticatedVehiclesIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
+  '/documents/$docId': typeof AuthenticatedDocumentsDocIdRoute
+  '/jobs/$jobId': typeof AuthenticatedJobsJobIdRoute
+  '/jobs/new': typeof AuthenticatedJobsNewRoute
+  '/assistant': typeof AuthenticatedAssistantIndexRoute
+  '/claims': typeof AuthenticatedClaimsIndexRoute
+  '/customers': typeof AuthenticatedCustomersIndexRoute
+  '/documents': typeof AuthenticatedDocumentsIndexRoute
+  '/invoices': typeof AuthenticatedInvoicesIndexRoute
+  '/jobs': typeof AuthenticatedJobsIndexRoute
+  '/review-queue': typeof AuthenticatedReviewQueueIndexRoute
+  '/search': typeof AuthenticatedSearchIndexRoute
+  '/vehicles': typeof AuthenticatedVehiclesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
+  '/_authenticated/documents/$docId': typeof AuthenticatedDocumentsDocIdRoute
+  '/_authenticated/jobs/$jobId': typeof AuthenticatedJobsJobIdRoute
+  '/_authenticated/jobs/new': typeof AuthenticatedJobsNewRoute
+  '/_authenticated/assistant/': typeof AuthenticatedAssistantIndexRoute
+  '/_authenticated/claims/': typeof AuthenticatedClaimsIndexRoute
+  '/_authenticated/customers/': typeof AuthenticatedCustomersIndexRoute
+  '/_authenticated/documents/': typeof AuthenticatedDocumentsIndexRoute
+  '/_authenticated/invoices/': typeof AuthenticatedInvoicesIndexRoute
+  '/_authenticated/jobs/': typeof AuthenticatedJobsIndexRoute
+  '/_authenticated/review-queue/': typeof AuthenticatedReviewQueueIndexRoute
+  '/_authenticated/search/': typeof AuthenticatedSearchIndexRoute
+  '/_authenticated/vehicles/': typeof AuthenticatedVehiclesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/customers/$customerId'
+    | '/documents/$docId'
+    | '/jobs/$jobId'
+    | '/jobs/new'
+    | '/assistant/'
+    | '/claims/'
+    | '/customers/'
+    | '/documents/'
+    | '/invoices/'
+    | '/jobs/'
+    | '/review-queue/'
+    | '/search/'
+    | '/vehicles/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/auth'
+    | '/'
+    | '/customers/$customerId'
+    | '/documents/$docId'
+    | '/jobs/$jobId'
+    | '/jobs/new'
+    | '/assistant'
+    | '/claims'
+    | '/customers'
+    | '/documents'
+    | '/invoices'
+    | '/jobs'
+    | '/review-queue'
+    | '/search'
+    | '/vehicles'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/'
+    | '/_authenticated/customers/$customerId'
+    | '/_authenticated/documents/$docId'
+    | '/_authenticated/jobs/$jobId'
+    | '/_authenticated/jobs/new'
+    | '/_authenticated/assistant/'
+    | '/_authenticated/claims/'
+    | '/_authenticated/customers/'
+    | '/_authenticated/documents/'
+    | '/_authenticated/invoices/'
+    | '/_authenticated/jobs/'
+    | '/_authenticated/review-queue/'
+    | '/_authenticated/search/'
+    | '/_authenticated/vehicles/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/vehicles/': {
+      id: '/_authenticated/vehicles/'
+      path: '/vehicles'
+      fullPath: '/vehicles/'
+      preLoaderRoute: typeof AuthenticatedVehiclesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/search/': {
+      id: '/_authenticated/search/'
+      path: '/search'
+      fullPath: '/search/'
+      preLoaderRoute: typeof AuthenticatedSearchIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/review-queue/': {
+      id: '/_authenticated/review-queue/'
+      path: '/review-queue'
+      fullPath: '/review-queue/'
+      preLoaderRoute: typeof AuthenticatedReviewQueueIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/jobs/': {
+      id: '/_authenticated/jobs/'
+      path: '/jobs'
+      fullPath: '/jobs/'
+      preLoaderRoute: typeof AuthenticatedJobsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/invoices/': {
+      id: '/_authenticated/invoices/'
+      path: '/invoices'
+      fullPath: '/invoices/'
+      preLoaderRoute: typeof AuthenticatedInvoicesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/documents/': {
+      id: '/_authenticated/documents/'
+      path: '/documents'
+      fullPath: '/documents/'
+      preLoaderRoute: typeof AuthenticatedDocumentsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/customers/': {
+      id: '/_authenticated/customers/'
+      path: '/customers'
+      fullPath: '/customers/'
+      preLoaderRoute: typeof AuthenticatedCustomersIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/claims/': {
+      id: '/_authenticated/claims/'
+      path: '/claims'
+      fullPath: '/claims/'
+      preLoaderRoute: typeof AuthenticatedClaimsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/assistant/': {
+      id: '/_authenticated/assistant/'
+      path: '/assistant'
+      fullPath: '/assistant/'
+      preLoaderRoute: typeof AuthenticatedAssistantIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/jobs/new': {
+      id: '/_authenticated/jobs/new'
+      path: '/jobs/new'
+      fullPath: '/jobs/new'
+      preLoaderRoute: typeof AuthenticatedJobsNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/jobs/$jobId': {
+      id: '/_authenticated/jobs/$jobId'
+      path: '/jobs/$jobId'
+      fullPath: '/jobs/$jobId'
+      preLoaderRoute: typeof AuthenticatedJobsJobIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/documents/$docId': {
+      id: '/_authenticated/documents/$docId'
+      path: '/documents/$docId'
+      fullPath: '/documents/$docId'
+      preLoaderRoute: typeof AuthenticatedDocumentsDocIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/customers/$customerId': {
+      id: '/_authenticated/customers/$customerId'
+      path: '/customers/$customerId'
+      fullPath: '/customers/$customerId'
+      preLoaderRoute: typeof AuthenticatedCustomersCustomerIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedCustomersCustomerIdRoute: typeof AuthenticatedCustomersCustomerIdRoute
+  AuthenticatedDocumentsDocIdRoute: typeof AuthenticatedDocumentsDocIdRoute
+  AuthenticatedJobsJobIdRoute: typeof AuthenticatedJobsJobIdRoute
+  AuthenticatedJobsNewRoute: typeof AuthenticatedJobsNewRoute
+  AuthenticatedAssistantIndexRoute: typeof AuthenticatedAssistantIndexRoute
+  AuthenticatedClaimsIndexRoute: typeof AuthenticatedClaimsIndexRoute
+  AuthenticatedCustomersIndexRoute: typeof AuthenticatedCustomersIndexRoute
+  AuthenticatedDocumentsIndexRoute: typeof AuthenticatedDocumentsIndexRoute
+  AuthenticatedInvoicesIndexRoute: typeof AuthenticatedInvoicesIndexRoute
+  AuthenticatedJobsIndexRoute: typeof AuthenticatedJobsIndexRoute
+  AuthenticatedReviewQueueIndexRoute: typeof AuthenticatedReviewQueueIndexRoute
+  AuthenticatedSearchIndexRoute: typeof AuthenticatedSearchIndexRoute
+  AuthenticatedVehiclesIndexRoute: typeof AuthenticatedVehiclesIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedCustomersCustomerIdRoute: AuthenticatedCustomersCustomerIdRoute,
+  AuthenticatedDocumentsDocIdRoute: AuthenticatedDocumentsDocIdRoute,
+  AuthenticatedJobsJobIdRoute: AuthenticatedJobsJobIdRoute,
+  AuthenticatedJobsNewRoute: AuthenticatedJobsNewRoute,
+  AuthenticatedAssistantIndexRoute: AuthenticatedAssistantIndexRoute,
+  AuthenticatedClaimsIndexRoute: AuthenticatedClaimsIndexRoute,
+  AuthenticatedCustomersIndexRoute: AuthenticatedCustomersIndexRoute,
+  AuthenticatedDocumentsIndexRoute: AuthenticatedDocumentsIndexRoute,
+  AuthenticatedInvoicesIndexRoute: AuthenticatedInvoicesIndexRoute,
+  AuthenticatedJobsIndexRoute: AuthenticatedJobsIndexRoute,
+  AuthenticatedReviewQueueIndexRoute: AuthenticatedReviewQueueIndexRoute,
+  AuthenticatedSearchIndexRoute: AuthenticatedSearchIndexRoute,
+  AuthenticatedVehiclesIndexRoute: AuthenticatedVehiclesIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
