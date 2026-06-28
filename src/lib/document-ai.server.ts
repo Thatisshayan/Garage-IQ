@@ -417,7 +417,7 @@ export async function backfillFromDocument(
         job_id: job.id,
         from_status: null,
         to_status: "completed",
-        trigger: "ai_extracted",
+        trigger: "ai",
         reason: "Historical backfill from document",
         source_document_id: documentId,
         actor_id: userId,
