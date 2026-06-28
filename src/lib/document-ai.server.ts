@@ -350,3 +350,121 @@ async function autoLink(
     });
   }
 }
+
+// Backfill: for historical docs, create customer/vehicle/job from extracted data
+// when no existing match was found by autoLink.
+export async function backfillFromDocument(
+  supabase: SupabaseClient<Database>,
+  documentId: string,
+  userId: string,
+): Promise<{ created: { customer?: string; vehicle?: string; job?: string } }> {
+  const created: { customer?: string; vehicle?: string; job?: string } = {};
+  const { data: doc } = await supabase
+    .from("documents")
+    .select("*")
+    .eq("id", documentId)
+    .single();
+  if (!doc || doc.job_id) return { created };
+
+  const ex = (doc.extracted_data as any)?.extracted ?? {};
+  const customerName = (ex.customer_name || "").toString().trim();
+  const vin = (ex.vin || "").toString().trim();
+
+  let customerId = doc.customer_id;
+  let vehicleId = doc.vehicle_id;
+
+  if (!customerId && customerName) {
+    const { data: cust } = await supabase
+      .from("customers")
+      .insert({ name: customerName })
+      .select("id")
+      .single();
+    if (cust) {
+      customerId = cust.id;
+      created.customer = cust.id;
+    }
+  }
+
+  if (!vehicleId && vin && customerId) {
+    const { data: veh } = await supabase
+      .from("vehicles")
+      .insert({ vin, customer_id: customerId })
+      .select("id")
+      .single();
+    if (veh) {
+      vehicleId = veh.id;
+      created.vehicle = veh.id;
+    }
+  }
+
+  let jobId: string | null = null;
+  if (customerId && vehicleId) {
+    const { data: job } = await supabase
+      .from("jobs")
+      .insert({
+        customer_id: customerId,
+        vehicle_id: vehicleId,
+        description: `Historical: ${doc.file_name}`,
+        status: "completed",
+        assigned_to: userId,
+      })
+      .select("id")
+      .single();
+    if (job) {
+      jobId = job.id;
+      created.job = job.id;
+      await supabase.from("job_status_events").insert({
+        job_id: job.id,
+        from_status: null,
+        to_status: "completed",
+        trigger: "ai_extracted",
+        reason: "Historical backfill from document",
+        source_document_id: documentId,
+        actor_id: userId,
+      });
+    }
+  }
+
+  if (customerId || vehicleId || jobId) {
+    await supabase
+      .from("documents")
+      .update({
+        customer_id: customerId,
+        vehicle_id: vehicleId,
+        job_id: jobId,
+        processing_status: jobId ? "linked" : doc.processing_status,
+      })
+      .eq("id", documentId);
+
+    // Create side-effect records (invoice/claim) now that we have a job
+    if (jobId) {
+      if (doc.type === "invoice") {
+        await supabase.from("invoices").insert({
+          document_id: documentId,
+          job_id: jobId,
+          vendor: ex.vendor ?? null,
+          invoice_date: ex.invoice_date ?? null,
+          amount: ex.subtotal ?? null,
+          tax: ex.tax ?? null,
+          total: ex.total ?? null,
+          currency: ex.currency ?? "USD",
+          due_date: ex.due_date ?? null,
+          payment_status: ex.payment_status === "paid" ? "paid" : "unpaid",
+          paid_at: ex.payment_status === "paid" ? new Date().toISOString() : null,
+        });
+      } else if (doc.type === "insurance_document") {
+        await supabase.from("insurance_claims").insert({
+          job_id: jobId,
+          claim_number: ex.claim_number ?? null,
+          insurer: ex.insurer ?? null,
+          policy_number: ex.policy_number ?? null,
+          status: ex.claim_status ?? "pending",
+          approved_amount: ex.approved_amount ?? null,
+          effective_date: ex.effective_date ?? null,
+        });
+      }
+    }
+  }
+
+  return { created };
+}
