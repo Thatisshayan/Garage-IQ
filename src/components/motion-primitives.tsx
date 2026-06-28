@@ -1,10 +1,11 @@
 import { motion, useMotionValue, useTransform, animate, type MotionProps } from "framer-motion";
 import { useEffect, type ReactNode } from "react";
 
+const EASE = [0.22, 1, 0.36, 1] as const;
+
 export const fadeUp = {
   initial: { opacity: 0, y: 12 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.45, ease: EASE } },
 };
 
 export const stagger = {
@@ -13,7 +14,7 @@ export const stagger = {
 
 export const itemUp = {
   initial: { opacity: 0, y: 14 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE } },
 };
 
 export function PageShell({ children, className = "" }: { children: ReactNode; className?: string }) {
