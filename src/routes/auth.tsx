@@ -1,11 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { Wrench } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -32,9 +34,7 @@ function AuthPage() {
     try {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
+          email, password, options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
         toast.success("Account created — signing you in…");
@@ -45,54 +45,117 @@ function AuthPage() {
       navigate({ to: "/" });
     } catch (err: any) {
       toast.error(err.message ?? "Authentication failed");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   async function google() {
-    const res = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
+    const res = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
     if (res.error) toast.error(res.error.message);
     else if (!res.redirected) navigate({ to: "/" });
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <div className="text-xs uppercase tracking-widest text-muted-foreground">Workshop</div>
-          <h1 className="text-3xl font-semibold">OpsDeck</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            AI-assisted repair & insurance workflow
-          </p>
+    <div className="min-h-screen relative flex bg-background text-foreground overflow-hidden">
+      <div className="absolute inset-0 grid-bg opacity-40" />
+      <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-primary/15 blur-[120px]" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full bg-[oklch(0.65_0.18_280)]/10 blur-[140px]" />
+
+      {/* Left: brand panel */}
+      <div className="hidden lg:flex relative w-1/2 flex-col justify-between p-12 border-r border-border">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-md bg-[var(--gradient-ember)] grid place-items-center ember-glow">
+            <Wrench className="w-4 h-4 text-[var(--ember-foreground)]" strokeWidth={2.5} />
+          </div>
+          <div>
+            <div className="font-display text-base font-semibold leading-none">OpsDeck</div>
+            <div className="text-[10px] tick text-muted-foreground tracking-[0.2em] mt-1">WORKSHOP / v1.0</div>
+          </div>
         </div>
-        <div className="border border-border rounded-lg p-6 bg-card space-y-4">
-          <form onSubmit={submit} className="space-y-3">
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="text-[11px] tick uppercase tracking-[0.24em] text-muted-foreground mb-4">// pit-lane operations</div>
+          <h2 className="font-display text-5xl font-semibold leading-[1.02] max-w-md">
+            Every claim. Every car. <span className="ember-text">Zero friction.</span>
+          </h2>
+          <p className="mt-4 text-sm text-muted-foreground max-w-sm">
+            AI-orchestrated repair workflows: OCR, classification, insurer state machines, and a live ops deck — built for shops that move.
+          </p>
+          <div className="mt-8 grid grid-cols-3 gap-3 max-w-md">
+            {[
+              ["AUTO", "Doc intake"],
+              ["LIVE", "State machine"],
+              ["NL→SQL", "Assistant"],
+            ].map(([k, v]) => (
+              <div key={k} className="panel p-3">
+                <div className="tick text-[10px] uppercase tracking-[0.18em] text-primary">{k}</div>
+                <div className="text-xs mt-1 text-muted-foreground">{v}</div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        <div className="text-[10px] tick uppercase tracking-[0.2em] text-muted-foreground">
+          © {new Date().getFullYear()} OpsDeck · Secured workshop infra
+        </div>
+      </div>
+
+      {/* Right: form */}
+      <div className="relative flex-1 flex items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full max-w-sm"
+        >
+          <div className="lg:hidden flex items-center gap-2.5 mb-6">
+            <div className="w-9 h-9 rounded-md bg-[var(--gradient-ember)] grid place-items-center ember-glow">
+              <Wrench className="w-4 h-4 text-[var(--ember-foreground)]" strokeWidth={2.5} />
             </div>
-            <div>
-              <Label htmlFor="pw">Password</Label>
-              <Input id="pw" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <div className="font-display text-base font-semibold">OpsDeck</div>
+          </div>
+
+          <div className="text-[11px] tick uppercase tracking-[0.24em] text-muted-foreground">
+            {mode === "signin" ? "// access" : "// onboarding"}
+          </div>
+          <h1 className="font-display text-3xl font-semibold mt-2">
+            {mode === "signin" ? "Sign in to the deck" : "Create your account"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1.5">
+            {mode === "signin" ? "Resume where the bay left off." : "First user becomes shop admin."}
+          </p>
+
+          <div className="panel p-6 mt-6 space-y-4">
+            <form onSubmit={submit} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-[10px] tick uppercase tracking-[0.18em] text-muted-foreground">Email</Label>
+                <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="bg-background/40" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="pw" className="text-[10px] tick uppercase tracking-[0.18em] text-muted-foreground">Password</Label>
+                <Input id="pw" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="bg-background/40" />
+              </div>
+              <Button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 ember-glow">
+                {loading ? "…" : mode === "signin" ? "Sign in →" : "Create account →"}
+              </Button>
+            </form>
+            <div className="flex items-center gap-3 text-[10px] tick uppercase tracking-[0.2em] text-muted-foreground">
+              <div className="flex-1 h-px bg-border" /> or <div className="flex-1 h-px bg-border" />
             </div>
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? "…" : mode === "signin" ? "Sign in" : "Create account"}
-            </Button>
-          </form>
-          <Button variant="outline" className="w-full" onClick={google}>
-            Continue with Google
-          </Button>
+            <Button variant="outline" className="w-full" onClick={google}>Continue with Google</Button>
+          </div>
+
           <button
             type="button"
-            className="text-xs text-muted-foreground hover:text-foreground w-full text-center"
+            className="mt-4 text-xs text-muted-foreground hover:text-primary transition-colors w-full text-center"
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
           >
-            {mode === "signin" ? "Need an account? Sign up" : "Already have an account? Sign in"}
+            {mode === "signin" ? "Need an account? Sign up →" : "← Already have an account? Sign in"}
           </button>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

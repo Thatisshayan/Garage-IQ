@@ -1,5 +1,10 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  LayoutDashboard, Briefcase, Users, Car, FileText, ShieldCheck,
+  Receipt, Search, Bot, Inbox, LogOut, Wrench,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -11,61 +16,118 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthedLayout,
 });
 
-import { Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { LayoutDashboard, Briefcase, Users, Car, FileText, ShieldCheck, Receipt, Search, Bot, Inbox, LogOut } from "lucide-react";
+const NAV = [
+  { to: "/", label: "Overview", icon: LayoutDashboard, group: "Operate" },
+  { to: "/jobs", label: "Work orders", icon: Briefcase, group: "Operate" },
+  { to: "/review-queue", label: "Review queue", icon: Inbox, group: "Operate" },
+  { to: "/documents", label: "Documents", icon: FileText, group: "Records" },
+  { to: "/customers", label: "Customers", icon: Users, group: "Records" },
+  { to: "/vehicles", label: "Vehicles", icon: Car, group: "Records" },
+  { to: "/claims", label: "Claims", icon: ShieldCheck, group: "Finance" },
+  { to: "/invoices", label: "Invoices", icon: Receipt, group: "Finance" },
+  { to: "/search", label: "Global search", icon: Search, group: "Intel" },
+  { to: "/assistant", label: "AI assistant", icon: Bot, group: "Intel" },
+] as const;
 
 function AuthedLayout() {
   const navigate = useNavigate();
   const router = useRouter();
-  const nav = [
-    { to: "/", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/jobs", label: "Jobs", icon: Briefcase },
-    { to: "/customers", label: "Customers", icon: Users },
-    { to: "/vehicles", label: "Vehicles", icon: Car },
-    { to: "/documents", label: "Documents", icon: FileText },
-    { to: "/review-queue", label: "Review Queue", icon: Inbox },
-    { to: "/claims", label: "Claims", icon: ShieldCheck },
-    { to: "/invoices", label: "Invoices", icon: Receipt },
-    { to: "/search", label: "Search", icon: Search },
-    { to: "/assistant", label: "AI Assistant", icon: Bot },
-  ];
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  const groups = Array.from(new Set(NAV.map((n) => n.group)));
+
   return (
     <div className="min-h-screen flex bg-background text-foreground">
-      <aside className="w-60 shrink-0 border-r border-border bg-card flex flex-col">
-        <div className="px-5 py-4 border-b border-border">
-          <div className="text-sm uppercase tracking-widest text-muted-foreground">Workshop</div>
-          <div className="text-lg font-semibold">OpsDeck</div>
+      {/* SIDEBAR */}
+      <aside className="w-[244px] shrink-0 border-r border-border bg-sidebar flex flex-col relative">
+        <div className="absolute inset-0 dot-bg opacity-40 pointer-events-none" />
+        <div className="relative px-5 pt-5 pb-4 border-b border-sidebar-border">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-md bg-[var(--gradient-ember)] grid place-items-center ember-glow">
+              <Wrench className="w-4 h-4 text-[var(--ember-foreground)]" strokeWidth={2.5} />
+            </div>
+            <div>
+              <div className="font-display text-[15px] font-semibold leading-none">OpsDeck</div>
+              <div className="text-[10px] tick text-muted-foreground tracking-[0.18em] mt-1">WORKSHOP / v1.0</div>
+            </div>
+          </div>
+          <div className="mt-4 flex items-center gap-2 text-[10px] tick uppercase tracking-[0.16em] text-muted-foreground">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--signal)] pulse-dot" />
+            Bay online
+          </div>
         </div>
-        <nav className="flex-1 py-2 space-y-0.5">
-          {nav.map((n) => {
-            const Icon = n.icon;
-            return (
-              <Link
-                key={n.to}
-                to={n.to}
-                className="flex items-center gap-3 px-5 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-                activeProps={{ className: "bg-accent text-accent-foreground border-l-2 border-primary" }}
-                activeOptions={{ exact: n.to === "/" }}
-              >
-                <Icon className="w-4 h-4" />
-                {n.label}
-              </Link>
-            );
-          })}
+
+        <nav className="relative flex-1 py-3 overflow-y-auto">
+          {groups.map((g) => (
+            <div key={g} className="mb-4">
+              <div className="px-5 mb-1.5 text-[10px] tick uppercase tracking-[0.22em] text-muted-foreground/70">{g}</div>
+              <div className="space-y-0.5 px-2">
+                {NAV.filter((n) => n.group === g).map((n) => {
+                  const Icon = n.icon;
+                  const active = n.to === "/" ? pathname === "/" : pathname.startsWith(n.to);
+                  return (
+                    <Link key={n.to} to={n.to} className="block group">
+                      <div className={`relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                        active ? "text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60"
+                      }`}>
+                        {active && (
+                          <motion.div
+                            layoutId="nav-active"
+                            className="absolute inset-0 rounded-md bg-sidebar-accent border border-sidebar-border"
+                            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                          />
+                        )}
+                        {active && (
+                          <motion.span
+                            layoutId="nav-accent"
+                            className="absolute left-0 top-1.5 bottom-1.5 w-[2px] bg-primary rounded-r"
+                            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                          />
+                        )}
+                        <Icon className={`relative w-4 h-4 ${active ? "text-primary" : ""}`} strokeWidth={active ? 2.4 : 1.8} />
+                        <span className="relative">{n.label}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
-        <button
-          onClick={async () => {
-            await supabase.auth.signOut();
-            router.invalidate();
-            navigate({ to: "/auth" });
-          }}
-          className="m-3 flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-border hover:bg-accent"
-        >
-          <LogOut className="w-4 h-4" /> Sign out
-        </button>
+
+        <div className="relative m-3 p-3 rounded-md border border-sidebar-border bg-sidebar-accent/40">
+          <div className="text-[10px] tick uppercase tracking-[0.2em] text-muted-foreground">Session</div>
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut();
+              router.invalidate();
+              navigate({ to: "/auth" });
+            }}
+            className="mt-2 flex items-center justify-between w-full text-sm hover:text-primary transition-colors"
+          >
+            <span>Sign out</span>
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </aside>
-      <main className="flex-1 overflow-auto">
-        <Outlet />
+
+      {/* MAIN */}
+      <main className="flex-1 overflow-auto relative">
+        <div className="absolute inset-0 grid-bg opacity-[0.35] pointer-events-none" />
+        <div className="absolute -top-32 -right-32 w-[480px] h-[480px] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
+        <div className="relative">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </main>
     </div>
   );
