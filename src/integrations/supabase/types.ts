@@ -84,12 +84,14 @@ export type Database = {
       }
       documents: {
         Row: {
+          archived_at: string | null
           confidence_score: number | null
           created_at: string
           customer_id: string | null
           extracted_data: Json
           file_name: string
           id: string
+          is_historical: boolean
           job_id: string | null
           mime_type: string | null
           ocr_text: string | null
@@ -102,12 +104,14 @@ export type Database = {
           vehicle_id: string | null
         }
         Insert: {
+          archived_at?: string | null
           confidence_score?: number | null
           created_at?: string
           customer_id?: string | null
           extracted_data?: Json
           file_name: string
           id?: string
+          is_historical?: boolean
           job_id?: string | null
           mime_type?: string | null
           ocr_text?: string | null
@@ -120,12 +124,14 @@ export type Database = {
           vehicle_id?: string | null
         }
         Update: {
+          archived_at?: string | null
           confidence_score?: number | null
           created_at?: string
           customer_id?: string | null
           extracted_data?: Json
           file_name?: string
           id?: string
+          is_historical?: boolean
           job_id?: string | null
           mime_type?: string | null
           ocr_text?: string | null

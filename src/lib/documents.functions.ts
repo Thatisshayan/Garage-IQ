@@ -66,6 +66,8 @@ export const listDocuments = createServerFn({ method: "GET" })
         status: z
           .enum(["pending", "processing", "extracted", "linked", "review", "error"])
           .optional(),
+        archived: z.boolean().optional(),
+        historical: z.boolean().optional(),
       })
       .parse(d ?? {}),
   )
@@ -76,9 +78,46 @@ export const listDocuments = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false });
     if (data.type) q = q.eq("type", data.type);
     if (data.status) q = q.eq("processing_status", data.status);
+    if (data.archived === true) q = q.not("archived_at", "is", null);
+    else if (data.archived === false) q = q.is("archived_at", null);
+    if (data.historical !== undefined) q = q.eq("is_historical", data.historical);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
     return rows;
+  });
+
+export const archiveDocument = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid(), archived: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("documents")
+      .update({ archived_at: data.archived ? new Date().toISOString() : null })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// Ingest a historical document: run AI pipeline AND auto-create customer/vehicle/job
+// from extracted data when no existing match is found. Backfills past invoices/claims.
+export const ingestHistoricalDocument = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await context.supabase
+      .from("documents")
+      .update({ is_historical: true })
+      .eq("id", data.id);
+    try {
+      const { processDocumentNow, backfillFromDocument } = await import("./document-ai.server");
+      await processDocumentNow(context.supabase, data.id);
+      const result = await backfillFromDocument(context.supabase, data.id, context.userId);
+      return { ok: true, ...result };
+    } catch (e: any) {
+      return { ok: false, error: String(e?.message ?? e) };
+    }
   });
 
 export const getDocument = createServerFn({ method: "GET" })
