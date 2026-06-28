@@ -23,6 +23,7 @@ import { Route as AuthenticatedClaimsIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAssistantIndexRouteImport } from './routes/_authenticated/assistant/index'
 import { Route as AuthenticatedJobsNewRouteImport } from './routes/_authenticated/jobs/new'
 import { Route as AuthenticatedJobsJobIdRouteImport } from './routes/_authenticated/jobs/$jobId'
+import { Route as AuthenticatedDocumentsArchiveRouteImport } from './routes/_authenticated/documents/archive'
 import { Route as AuthenticatedDocumentsDocIdRouteImport } from './routes/_authenticated/documents/$docId'
 import { Route as AuthenticatedCustomersCustomerIdRouteImport } from './routes/_authenticated/customers/$customerId'
 
@@ -103,6 +104,12 @@ const AuthenticatedJobsJobIdRoute = AuthenticatedJobsJobIdRouteImport.update({
   path: '/jobs/$jobId',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDocumentsArchiveRoute =
+  AuthenticatedDocumentsArchiveRouteImport.update({
+    id: '/documents/archive',
+    path: '/documents/archive',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDocumentsDocIdRoute =
   AuthenticatedDocumentsDocIdRouteImport.update({
     id: '/documents/$docId',
@@ -121,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/documents/$docId': typeof AuthenticatedDocumentsDocIdRoute
+  '/documents/archive': typeof AuthenticatedDocumentsArchiveRoute
   '/jobs/$jobId': typeof AuthenticatedJobsJobIdRoute
   '/jobs/new': typeof AuthenticatedJobsNewRoute
   '/assistant/': typeof AuthenticatedAssistantIndexRoute
@@ -138,6 +146,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/documents/$docId': typeof AuthenticatedDocumentsDocIdRoute
+  '/documents/archive': typeof AuthenticatedDocumentsArchiveRoute
   '/jobs/$jobId': typeof AuthenticatedJobsJobIdRoute
   '/jobs/new': typeof AuthenticatedJobsNewRoute
   '/assistant': typeof AuthenticatedAssistantIndexRoute
@@ -157,6 +166,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/_authenticated/documents/$docId': typeof AuthenticatedDocumentsDocIdRoute
+  '/_authenticated/documents/archive': typeof AuthenticatedDocumentsArchiveRoute
   '/_authenticated/jobs/$jobId': typeof AuthenticatedJobsJobIdRoute
   '/_authenticated/jobs/new': typeof AuthenticatedJobsNewRoute
   '/_authenticated/assistant/': typeof AuthenticatedAssistantIndexRoute
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/customers/$customerId'
     | '/documents/$docId'
+    | '/documents/archive'
     | '/jobs/$jobId'
     | '/jobs/new'
     | '/assistant/'
@@ -193,6 +204,7 @@ export interface FileRouteTypes {
     | '/'
     | '/customers/$customerId'
     | '/documents/$docId'
+    | '/documents/archive'
     | '/jobs/$jobId'
     | '/jobs/new'
     | '/assistant'
@@ -211,6 +223,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/customers/$customerId'
     | '/_authenticated/documents/$docId'
+    | '/_authenticated/documents/archive'
     | '/_authenticated/jobs/$jobId'
     | '/_authenticated/jobs/new'
     | '/_authenticated/assistant/'
@@ -329,6 +342,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedJobsJobIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/documents/archive': {
+      id: '/_authenticated/documents/archive'
+      path: '/documents/archive'
+      fullPath: '/documents/archive'
+      preLoaderRoute: typeof AuthenticatedDocumentsArchiveRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/documents/$docId': {
       id: '/_authenticated/documents/$docId'
       path: '/documents/$docId'
@@ -350,6 +370,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedCustomersCustomerIdRoute: typeof AuthenticatedCustomersCustomerIdRoute
   AuthenticatedDocumentsDocIdRoute: typeof AuthenticatedDocumentsDocIdRoute
+  AuthenticatedDocumentsArchiveRoute: typeof AuthenticatedDocumentsArchiveRoute
   AuthenticatedJobsJobIdRoute: typeof AuthenticatedJobsJobIdRoute
   AuthenticatedJobsNewRoute: typeof AuthenticatedJobsNewRoute
   AuthenticatedAssistantIndexRoute: typeof AuthenticatedAssistantIndexRoute
@@ -367,6 +388,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedCustomersCustomerIdRoute: AuthenticatedCustomersCustomerIdRoute,
   AuthenticatedDocumentsDocIdRoute: AuthenticatedDocumentsDocIdRoute,
+  AuthenticatedDocumentsArchiveRoute: AuthenticatedDocumentsArchiveRoute,
   AuthenticatedJobsJobIdRoute: AuthenticatedJobsJobIdRoute,
   AuthenticatedJobsNewRoute: AuthenticatedJobsNewRoute,
   AuthenticatedAssistantIndexRoute: AuthenticatedAssistantIndexRoute,
