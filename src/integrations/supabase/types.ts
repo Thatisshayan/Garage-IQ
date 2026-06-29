@@ -336,7 +336,10 @@ export type Database = {
           description: string | null
           flagged: boolean
           id: string
+          odometer: number | null
+          reported_problem: string | null
           status: Database["public"]["Enums"]["job_status"]
+          total_owed: number | null
           updated_at: string
           vehicle_id: string
         }
@@ -347,7 +350,10 @@ export type Database = {
           description?: string | null
           flagged?: boolean
           id?: string
+          odometer?: number | null
+          reported_problem?: string | null
           status?: Database["public"]["Enums"]["job_status"]
+          total_owed?: number | null
           updated_at?: string
           vehicle_id: string
         }
@@ -358,7 +364,10 @@ export type Database = {
           description?: string | null
           flagged?: boolean
           id?: string
+          odometer?: number | null
+          reported_problem?: string | null
           status?: Database["public"]["Enums"]["job_status"]
+          total_owed?: number | null
           updated_at?: string
           vehicle_id?: string
         }
@@ -375,6 +384,59 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          job_id: string
+          method: string | null
+          note: string | null
+          paid_at: string
+          payer_name: string | null
+          payer_type: Database["public"]["Enums"]["payer_type"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          job_id: string
+          method?: string | null
+          note?: string | null
+          paid_at?: string
+          payer_name?: string | null
+          payer_type?: Database["public"]["Enums"]["payer_type"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          job_id?: string
+          method?: string | null
+          note?: string | null
+          paid_at?: string
+          payer_name?: string | null
+          payer_type?: Database["public"]["Enums"]["payer_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
             referencedColumns: ["id"]
           },
         ]
@@ -483,6 +545,7 @@ export type Database = {
         | "in_progress"
         | "awaiting_payment"
         | "completed"
+      payer_type: "insurance" | "client" | "other"
       payment_status: "unpaid" | "paid" | "overdue" | "disputed"
       review_reason:
         | "unclassified"
@@ -645,6 +708,7 @@ export const Constants = {
         "awaiting_payment",
         "completed",
       ],
+      payer_type: ["insurance", "client", "other"],
       payment_status: ["unpaid", "paid", "overdue", "disputed"],
       review_reason: [
         "unclassified",

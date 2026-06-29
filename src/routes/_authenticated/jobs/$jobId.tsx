@@ -1,12 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { getJob, overrideJobStatus } from "@/lib/jobs.functions";
+import { listJobPayments, addPayment, deletePayment, setJobTotalOwed } from "@/lib/payments.functions";
+import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { Button } from "@/components/ui/button";
 import { Badge } from "./index";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { Phone, Download, Trash2, Plus, DollarSign } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/jobs/$jobId")({
   head: () => ({ meta: [{ title: "Job detail" }] }),
@@ -25,8 +28,13 @@ const STATUSES = [
 function JobDetail() {
   const { jobId } = Route.useParams();
   const fn = useServerFn(getJob);
+  const payFn = useServerFn(listJobPayments);
   const qc = useQueryClient();
   const { data } = useSuspenseQuery({ queryKey: ["job", jobId], queryFn: () => fn({ data: { id: jobId } }) });
+  const { data: ledger } = useQuery({
+    queryKey: ["payments", jobId],
+    queryFn: () => payFn({ data: { job_id: jobId } }),
+  });
   const override = useServerFn(overrideJobStatus);
   const [newStatus, setNewStatus] = useState<string>(data.job.status);
   const [reason, setReason] = useState("");
@@ -44,17 +52,53 @@ function JobDetail() {
     } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
   }
 
+  function downloadPdf() {
+    if (!ledger) return;
+    generateInvoicePdf({
+      jobId: data.job.id,
+      jobDescription: data.job.description,
+      customer: {
+        name: data.job.customer?.name ?? "—",
+        phone: data.job.customer?.phone,
+        email: data.job.customer?.email,
+        address: data.job.customer?.address,
+      },
+      vehicle: {
+        year: data.job.vehicle?.year,
+        make: data.job.vehicle?.make,
+        model: data.job.vehicle?.model,
+        vin: data.job.vehicle?.vin,
+        license_plate: data.job.vehicle?.license_plate,
+      },
+      totalOwed: ledger.totalOwed,
+      payments: ledger.payments as any,
+      reportedProblem: (data.job as any).reported_problem,
+      odometer: (data.job as any).odometer,
+      currency: "CAD",
+    });
+  }
+
   const job = data.job;
   return (
     <div className="p-8 space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <Link to="/jobs" className="text-xs text-muted-foreground hover:text-foreground">← Jobs</Link>
           <h1 className="text-2xl font-semibold mt-1">{job.description || "Job"}</h1>
           <div className="flex items-center gap-2 mt-2">
             <Badge status={job.status} />
-            {job.flagged && <span className="text-xs text-[oklch(0.769_0.188_70.08)]">⚑ flagged</span>}
+            {job.flagged && <span className="text-xs text-amber-400">⚑ flagged</span>}
           </div>
+        </div>
+        <div className="flex gap-2">
+          {job.customer?.phone && (
+            <a href={`tel:${job.customer.phone}`} className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-primary/15 text-primary text-sm hover:bg-primary/25">
+              <Phone className="w-3.5 h-3.5" /> Call {job.customer.name?.split(" ")[0]}
+            </a>
+          )}
+          <Button variant="outline" size="sm" onClick={downloadPdf} disabled={!ledger}>
+            <Download className="w-3.5 h-3.5 mr-1.5" /> Invoice PDF
+          </Button>
         </div>
       </div>
 
@@ -68,6 +112,7 @@ function JobDetail() {
           <div className="font-medium">{job.vehicle?.year} {job.vehicle?.make} {job.vehicle?.model}</div>
           <div className="text-xs font-mono text-muted-foreground">VIN {job.vehicle?.vin}</div>
           <div className="text-xs font-mono text-muted-foreground">{job.vehicle?.license_plate}</div>
+          {(job as any).odometer && <div className="text-xs text-muted-foreground mt-1">Odo: {(job as any).odometer} km</div>}
         </Card>
         <Card title="Manual transition">
           <form onSubmit={submit} className="space-y-2">
@@ -79,6 +124,8 @@ function JobDetail() {
           </form>
         </Card>
       </div>
+
+      <PaymentLedger jobId={jobId} ledger={ledger} />
 
       <Section title="Insurance claims">
         {data.claims.length === 0 ? <Empty>No claims linked.</Empty> : (
@@ -107,19 +154,6 @@ function JobDetail() {
         )}
       </Section>
 
-      <Section title="Invoices">
-        {data.invoices.length === 0 ? <Empty>No invoices.</Empty> : (
-          <ul className="space-y-2">
-            {data.invoices.map((i: any) => (
-              <li key={i.id} className="border border-border rounded-md p-3 text-sm flex justify-between">
-                <span>{i.vendor ?? "—"} · ${i.total ?? "?"}</span>
-                <span className="text-xs uppercase">{i.payment_status}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Section>
-
       <Section title="Status timeline">
         <ol className="space-y-2">
           {data.events.map((e: any) => (
@@ -131,6 +165,136 @@ function JobDetail() {
           ))}
         </ol>
       </Section>
+    </div>
+  );
+}
+
+function PaymentLedger({ jobId, ledger }: { jobId: string; ledger: any }) {
+  const qc = useQueryClient();
+  const addFn = useServerFn(addPayment);
+  const delFn = useServerFn(deletePayment);
+  const setTotalFn = useServerFn(setJobTotalOwed);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ payer_type: "client" as "client" | "insurance" | "other", payer_name: "", amount: "", method: "", note: "" });
+  const [totalInput, setTotalInput] = useState<string>("");
+
+  async function add() {
+    if (!form.amount) { toast.error("Enter an amount"); return; }
+    try {
+      await addFn({ data: { job_id: jobId, payer_type: form.payer_type, payer_name: form.payer_name, amount: Number(form.amount), currency: "CAD", method: form.method, note: form.note } });
+      toast.success("Payment recorded");
+      setForm({ payer_type: "client", payer_name: "", amount: "", method: "", note: "" });
+      setOpen(false);
+      qc.invalidateQueries({ queryKey: ["payments", jobId] });
+      qc.invalidateQueries({ queryKey: ["job", jobId] });
+    } catch (e: any) { toast.error(e.message); }
+  }
+
+  async function remove(id: string) {
+    if (!confirm("Delete this payment entry?")) return;
+    await delFn({ data: { id } });
+    qc.invalidateQueries({ queryKey: ["payments", jobId] });
+  }
+
+  async function saveTotal() {
+    if (!totalInput) return;
+    await setTotalFn({ data: { job_id: jobId, total_owed: Number(totalInput) } });
+    toast.success("Total quoted updated");
+    setTotalInput("");
+    qc.invalidateQueries({ queryKey: ["payments", jobId] });
+  }
+
+  return (
+    <Section title="Payment ledger">
+      <div className="border border-border rounded-md bg-card overflow-hidden">
+        {/* Summary strip */}
+        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border border-b border-border">
+          <Stat label="Total quoted" value={ledger?.totalOwed != null ? `CAD ${ledger.totalOwed.toFixed(2)}` : "—"} />
+          <Stat label="From insurance" value={`CAD ${(ledger?.byInsurance ?? 0).toFixed(2)}`} tone="text-blue-400" />
+          <Stat label="From client" value={`CAD ${(ledger?.byClient ?? 0).toFixed(2)}`} tone="text-green-400" />
+          <Stat
+            label="Outstanding"
+            value={ledger?.outstanding != null ? `CAD ${ledger.outstanding.toFixed(2)}` : "—"}
+            tone={ledger?.outstanding != null && ledger.outstanding > 0 ? "text-amber-400" : "text-green-400"}
+          />
+        </div>
+
+        {/* Set quoted total */}
+        {ledger?.totalOwed == null && (
+          <div className="p-3 border-b border-border bg-secondary/30 flex items-center gap-2">
+            <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">No quoted total set.</span>
+            <input
+              value={totalInput}
+              onChange={(e) => setTotalInput(e.target.value)}
+              inputMode="decimal"
+              placeholder="Amount"
+              className="px-2 py-1 rounded bg-background border border-border text-sm w-32"
+            />
+            <Button size="sm" variant="outline" onClick={saveTotal}>Set</Button>
+          </div>
+        )}
+
+        {/* Entries */}
+        <div className="divide-y divide-border">
+          {(!ledger || ledger.payments.length === 0) && (
+            <div className="p-6 text-center text-sm text-muted-foreground">No payments yet.</div>
+          )}
+          {ledger?.payments.map((p: any) => (
+            <div key={p.id} className="px-4 py-3 flex items-center gap-3">
+              <span className={`text-[10px] tick px-1.5 py-0.5 rounded ${
+                p.payer_type === "insurance" ? "bg-blue-400/15 text-blue-400" :
+                p.payer_type === "client" ? "bg-green-400/15 text-green-400" :
+                "bg-secondary text-secondary-foreground"
+              }`}>{p.payer_type.toUpperCase()}</span>
+              <div className="flex-1 text-sm">
+                <div className="font-medium">{p.payer_name || (p.payer_type === "insurance" ? "Insurance" : "Customer")}</div>
+                <div className="text-xs text-muted-foreground">
+                  {format(new Date(p.paid_at), "PP")} {p.method && `· ${p.method}`} {p.note && `· ${p.note}`}
+                </div>
+              </div>
+              <div className="font-mono text-sm">CAD {Number(p.amount).toFixed(2)}</div>
+              <button onClick={() => remove(p.id)} className="text-muted-foreground hover:text-destructive p-1">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Add row */}
+        {open ? (
+          <div className="p-4 border-t border-border bg-secondary/20 space-y-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <select value={form.payer_type} onChange={(e) => setForm({ ...form, payer_type: e.target.value as any })} className="bg-background border border-border rounded px-2 py-2 text-sm">
+                <option value="client">Client</option>
+                <option value="insurance">Insurance</option>
+                <option value="other">Other</option>
+              </select>
+              <input value={form.payer_name} onChange={(e) => setForm({ ...form, payer_name: e.target.value })} placeholder="Payer name (opt)" className="bg-background border border-border rounded px-2 py-2 text-sm" />
+              <input value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} inputMode="decimal" placeholder="Amount CAD" className="bg-background border border-border rounded px-2 py-2 text-sm font-mono" />
+              <input value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value })} placeholder="Method (cash, etransfer…)" className="bg-background border border-border rounded px-2 py-2 text-sm" />
+            </div>
+            <input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Note (optional)" className="w-full bg-background border border-border rounded px-2 py-2 text-sm" />
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button size="sm" onClick={add}>Record payment</Button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={() => setOpen(true)} className="w-full p-3 border-t border-border text-sm font-medium hover:bg-secondary/40 flex items-center justify-center gap-2">
+            <Plus className="w-3.5 h-3.5" /> Add payment
+          </button>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className="px-4 py-3">
+      <div className="text-[10px] tick uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`text-sm font-mono mt-1 ${tone ?? ""}`}>{value}</div>
     </div>
   );
 }
