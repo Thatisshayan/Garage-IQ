@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedVehiclesIndexRouteImport } from './routes/_authenticated/vehicles/index'
+import { Route as AuthenticatedTodayIndexRouteImport } from './routes/_authenticated/today/index'
 import { Route as AuthenticatedSearchIndexRouteImport } from './routes/_authenticated/search/index'
 import { Route as AuthenticatedReviewQueueIndexRouteImport } from './routes/_authenticated/review-queue/index'
 import { Route as AuthenticatedJobsIndexRouteImport } from './routes/_authenticated/jobs/index'
@@ -21,6 +22,7 @@ import { Route as AuthenticatedDocumentsIndexRouteImport } from './routes/_authe
 import { Route as AuthenticatedCustomersIndexRouteImport } from './routes/_authenticated/customers/index'
 import { Route as AuthenticatedClaimsIndexRouteImport } from './routes/_authenticated/claims/index'
 import { Route as AuthenticatedAssistantIndexRouteImport } from './routes/_authenticated/assistant/index'
+import { Route as AuthenticatedMIntakeRouteImport } from './routes/_authenticated/m/intake'
 import { Route as AuthenticatedJobsNewRouteImport } from './routes/_authenticated/jobs/new'
 import { Route as AuthenticatedJobsJobIdRouteImport } from './routes/_authenticated/jobs/$jobId'
 import { Route as AuthenticatedDocumentsArchiveRouteImport } from './routes/_authenticated/documents/archive'
@@ -47,6 +49,11 @@ const AuthenticatedVehiclesIndexRoute =
     path: '/vehicles/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedTodayIndexRoute = AuthenticatedTodayIndexRouteImport.update({
+  id: '/today/',
+  path: '/today/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSearchIndexRoute =
   AuthenticatedSearchIndexRouteImport.update({
     id: '/search/',
@@ -94,6 +101,11 @@ const AuthenticatedAssistantIndexRoute =
     path: '/assistant/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMIntakeRoute = AuthenticatedMIntakeRouteImport.update({
+  id: '/m/intake',
+  path: '/m/intake',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedJobsNewRoute = AuthenticatedJobsNewRouteImport.update({
   id: '/jobs/new',
   path: '/jobs/new',
@@ -131,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/documents/archive': typeof AuthenticatedDocumentsArchiveRoute
   '/jobs/$jobId': typeof AuthenticatedJobsJobIdRoute
   '/jobs/new': typeof AuthenticatedJobsNewRoute
+  '/m/intake': typeof AuthenticatedMIntakeRoute
   '/assistant/': typeof AuthenticatedAssistantIndexRoute
   '/claims/': typeof AuthenticatedClaimsIndexRoute
   '/customers/': typeof AuthenticatedCustomersIndexRoute
@@ -139,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/jobs/': typeof AuthenticatedJobsIndexRoute
   '/review-queue/': typeof AuthenticatedReviewQueueIndexRoute
   '/search/': typeof AuthenticatedSearchIndexRoute
+  '/today/': typeof AuthenticatedTodayIndexRoute
   '/vehicles/': typeof AuthenticatedVehiclesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -149,6 +163,7 @@ export interface FileRoutesByTo {
   '/documents/archive': typeof AuthenticatedDocumentsArchiveRoute
   '/jobs/$jobId': typeof AuthenticatedJobsJobIdRoute
   '/jobs/new': typeof AuthenticatedJobsNewRoute
+  '/m/intake': typeof AuthenticatedMIntakeRoute
   '/assistant': typeof AuthenticatedAssistantIndexRoute
   '/claims': typeof AuthenticatedClaimsIndexRoute
   '/customers': typeof AuthenticatedCustomersIndexRoute
@@ -157,6 +172,7 @@ export interface FileRoutesByTo {
   '/jobs': typeof AuthenticatedJobsIndexRoute
   '/review-queue': typeof AuthenticatedReviewQueueIndexRoute
   '/search': typeof AuthenticatedSearchIndexRoute
+  '/today': typeof AuthenticatedTodayIndexRoute
   '/vehicles': typeof AuthenticatedVehiclesIndexRoute
 }
 export interface FileRoutesById {
@@ -169,6 +185,7 @@ export interface FileRoutesById {
   '/_authenticated/documents/archive': typeof AuthenticatedDocumentsArchiveRoute
   '/_authenticated/jobs/$jobId': typeof AuthenticatedJobsJobIdRoute
   '/_authenticated/jobs/new': typeof AuthenticatedJobsNewRoute
+  '/_authenticated/m/intake': typeof AuthenticatedMIntakeRoute
   '/_authenticated/assistant/': typeof AuthenticatedAssistantIndexRoute
   '/_authenticated/claims/': typeof AuthenticatedClaimsIndexRoute
   '/_authenticated/customers/': typeof AuthenticatedCustomersIndexRoute
@@ -177,6 +194,7 @@ export interface FileRoutesById {
   '/_authenticated/jobs/': typeof AuthenticatedJobsIndexRoute
   '/_authenticated/review-queue/': typeof AuthenticatedReviewQueueIndexRoute
   '/_authenticated/search/': typeof AuthenticatedSearchIndexRoute
+  '/_authenticated/today/': typeof AuthenticatedTodayIndexRoute
   '/_authenticated/vehicles/': typeof AuthenticatedVehiclesIndexRoute
 }
 export interface FileRouteTypes {
@@ -189,6 +207,7 @@ export interface FileRouteTypes {
     | '/documents/archive'
     | '/jobs/$jobId'
     | '/jobs/new'
+    | '/m/intake'
     | '/assistant/'
     | '/claims/'
     | '/customers/'
@@ -197,6 +216,7 @@ export interface FileRouteTypes {
     | '/jobs/'
     | '/review-queue/'
     | '/search/'
+    | '/today/'
     | '/vehicles/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -207,6 +227,7 @@ export interface FileRouteTypes {
     | '/documents/archive'
     | '/jobs/$jobId'
     | '/jobs/new'
+    | '/m/intake'
     | '/assistant'
     | '/claims'
     | '/customers'
@@ -215,6 +236,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/review-queue'
     | '/search'
+    | '/today'
     | '/vehicles'
   id:
     | '__root__'
@@ -226,6 +248,7 @@ export interface FileRouteTypes {
     | '/_authenticated/documents/archive'
     | '/_authenticated/jobs/$jobId'
     | '/_authenticated/jobs/new'
+    | '/_authenticated/m/intake'
     | '/_authenticated/assistant/'
     | '/_authenticated/claims/'
     | '/_authenticated/customers/'
@@ -234,6 +257,7 @@ export interface FileRouteTypes {
     | '/_authenticated/jobs/'
     | '/_authenticated/review-queue/'
     | '/_authenticated/search/'
+    | '/_authenticated/today/'
     | '/_authenticated/vehicles/'
   fileRoutesById: FileRoutesById
 }
@@ -270,6 +294,13 @@ declare module '@tanstack/react-router' {
       path: '/vehicles'
       fullPath: '/vehicles/'
       preLoaderRoute: typeof AuthenticatedVehiclesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/today/': {
+      id: '/_authenticated/today/'
+      path: '/today'
+      fullPath: '/today/'
+      preLoaderRoute: typeof AuthenticatedTodayIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/search/': {
@@ -328,6 +359,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAssistantIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/m/intake': {
+      id: '/_authenticated/m/intake'
+      path: '/m/intake'
+      fullPath: '/m/intake'
+      preLoaderRoute: typeof AuthenticatedMIntakeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/jobs/new': {
       id: '/_authenticated/jobs/new'
       path: '/jobs/new'
@@ -373,6 +411,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDocumentsArchiveRoute: typeof AuthenticatedDocumentsArchiveRoute
   AuthenticatedJobsJobIdRoute: typeof AuthenticatedJobsJobIdRoute
   AuthenticatedJobsNewRoute: typeof AuthenticatedJobsNewRoute
+  AuthenticatedMIntakeRoute: typeof AuthenticatedMIntakeRoute
   AuthenticatedAssistantIndexRoute: typeof AuthenticatedAssistantIndexRoute
   AuthenticatedClaimsIndexRoute: typeof AuthenticatedClaimsIndexRoute
   AuthenticatedCustomersIndexRoute: typeof AuthenticatedCustomersIndexRoute
@@ -381,6 +420,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedJobsIndexRoute: typeof AuthenticatedJobsIndexRoute
   AuthenticatedReviewQueueIndexRoute: typeof AuthenticatedReviewQueueIndexRoute
   AuthenticatedSearchIndexRoute: typeof AuthenticatedSearchIndexRoute
+  AuthenticatedTodayIndexRoute: typeof AuthenticatedTodayIndexRoute
   AuthenticatedVehiclesIndexRoute: typeof AuthenticatedVehiclesIndexRoute
 }
 
@@ -391,6 +431,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDocumentsArchiveRoute: AuthenticatedDocumentsArchiveRoute,
   AuthenticatedJobsJobIdRoute: AuthenticatedJobsJobIdRoute,
   AuthenticatedJobsNewRoute: AuthenticatedJobsNewRoute,
+  AuthenticatedMIntakeRoute: AuthenticatedMIntakeRoute,
   AuthenticatedAssistantIndexRoute: AuthenticatedAssistantIndexRoute,
   AuthenticatedClaimsIndexRoute: AuthenticatedClaimsIndexRoute,
   AuthenticatedCustomersIndexRoute: AuthenticatedCustomersIndexRoute,
@@ -399,6 +440,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedJobsIndexRoute: AuthenticatedJobsIndexRoute,
   AuthenticatedReviewQueueIndexRoute: AuthenticatedReviewQueueIndexRoute,
   AuthenticatedSearchIndexRoute: AuthenticatedSearchIndexRoute,
+  AuthenticatedTodayIndexRoute: AuthenticatedTodayIndexRoute,
   AuthenticatedVehiclesIndexRoute: AuthenticatedVehiclesIndexRoute,
 }
 

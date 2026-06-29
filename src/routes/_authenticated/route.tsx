@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Briefcase, Users, Car, FileText, ShieldCheck,
-  Receipt, Search, Bot, Inbox, LogOut, Wrench,
+  Receipt, Search, Bot, Inbox, LogOut, Wrench, Sunrise, Smartphone,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -17,8 +17,10 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 const NAV = [
+  { to: "/today", label: "Today", icon: Sunrise, group: "Operate" },
   { to: "/", label: "Overview", icon: LayoutDashboard, group: "Operate" },
   { to: "/jobs", label: "Work orders", icon: Briefcase, group: "Operate" },
+  { to: "/m/intake", label: "Quick intake", icon: Smartphone, group: "Operate" },
   { to: "/review-queue", label: "Review queue", icon: Inbox, group: "Operate" },
   { to: "/documents", label: "Documents", icon: FileText, group: "Records" },
   { to: "/customers", label: "Customers", icon: Users, group: "Records" },

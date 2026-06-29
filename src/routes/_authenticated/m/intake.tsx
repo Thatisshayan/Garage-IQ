@@ -453,7 +453,19 @@ function PhotoButton({ icon, label, busy, onFile, done }: any) {
   );
 }
 
-function Field({ label, value, onChange, type = "text", onBlur }: any) {
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  onBlur,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  onBlur?: () => void;
+}) {
   return (
     <div>
       <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">{label}</label>
