@@ -60,6 +60,7 @@ export const createCustomer = createServerFn({ method: "POST" })
         email: data.email || null,
         phone: data.phone || null,
         address: data.address || null,
+        created_by: context.userId,
       })
       .select()
       .single();

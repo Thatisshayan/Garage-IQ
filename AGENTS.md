@@ -48,3 +48,13 @@ Run with `bun run test`.
 ## Security
 
 See `SECURITY-DECISIONS.md` for CSRF posture and RLS isolation model decisions.
+
+## Lint / TypeScript `any` Policy
+
+`bun run lint` currently reports ~126 `@typescript-eslint/no-explicit-any` warnings. These are a **permanent baseline**, not a reduction target.
+
+**Why:** The remaining `any` occurrences fall into two categories:
+1. **Genuinely dynamic AI/SDK shapes** — AI assistant filter values, SDK content-type casts, extraction pipeline outputs where the schema is validated at runtime via Zod
+2. **Legacy props in UI components** — already-typed where it matters (money path, extraction schemas), cosmetic elsewhere
+
+**Rule:** New code should avoid adding `any`. If a new `any` is genuinely needed (dynamic AI response, SDK type gap), add it with a one-line reason comment. The lint rule stays at `warn` — CI passes but the count is visible. If the count grows above 150, triage the delta before adding more.

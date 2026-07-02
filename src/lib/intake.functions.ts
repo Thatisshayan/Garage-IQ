@@ -123,6 +123,7 @@ export const submitMobileIntake = createServerFn({ method: "POST" })
         .insert({
           name: data.customer.name,
           phone: data.customer.phone || null,
+          created_by: context.userId,
         })
         .select()
         .single();
@@ -143,6 +144,7 @@ export const submitMobileIntake = createServerFn({ method: "POST" })
           model: data.vehicle.model || null,
           year: data.vehicle.year || null,
           color: data.vehicle.color || null,
+          created_by: context.userId,
         })
         .select()
         .single();

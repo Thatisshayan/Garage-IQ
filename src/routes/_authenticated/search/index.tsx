@@ -27,7 +27,15 @@ function SearchPage() {
   }
   return (
     <div className="p-8 space-y-6 max-w-4xl">
-      <h1 className="text-3xl font-semibold">Search</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-semibold">Search</h1>
+        <span className="text-xs text-muted-foreground">
+          {"Looking for a quick jump? Try "}
+          <kbd className="px-1.5 py-0.5 rounded border border-border bg-background/50 font-mono">
+            ⌘K
+          </kbd>
+        </span>
+      </div>
       <form onSubmit={go} className="flex gap-2">
         <Input
           value={q}

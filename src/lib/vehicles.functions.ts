@@ -42,6 +42,7 @@ export const createVehicle = createServerFn({ method: "POST" })
         vin: data.vin || null,
         license_plate: data.license_plate || null,
         color: data.color || null,
+        created_by: context.userId,
       })
       .select()
       .single();

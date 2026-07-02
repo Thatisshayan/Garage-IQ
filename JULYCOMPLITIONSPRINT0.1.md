@@ -341,3 +341,233 @@ Verified: `git log` (4 real commits matching the claim), `bun run test` (69/69 p
 - Phase 16 is non-negotiable and comes first — everything Sprint 0.3 built around CI is currently theater until lint actually passes. Don't start Phase 17/18/19 work until `bun run lint` is green on a fresh clone AND the GitHub Actions run on `main` shows green, not just locally.
 - The lint failure was not a Sprint 0.3 regression — it's debt that predates Sprint 0.3 entirely and simply wasn't visible until CI enforcement was added. No blame here, just fix it now that it's caught.
 - Phase 18 requires a human; don't attempt to substitute an automated test for it and call it done — that's explicitly the gap unit tests can't close.
+
+---
+---
+
+## VERIFICATION — Sprint 0.4 claimed-complete audit (2026-07-02)
+
+Verified directly: `bun run lint` on current `main` → **0 errors, 126 warnings** (all `@typescript-eslint/no-explicit-any`, matches the "downgrade to warn" claim — CI genuinely goes green now since the rule no longer fails the build). `bun run test` → 69/69 pass. `document-ai.server.ts` — grepped for `any`: only 2 remaining hits (both in a JSDoc-adjacent SDK content-type cast, matches opencode's own characterization as "legitimate, SDK types don't cover this file variant"). Phase 18 (manual smoke test) and Phase 19 (RLS/search decisions) were correctly **not** claimed as done — opencode explicitly flagged both back as blocked on Shayan.
+
+### Confirmed DONE
+- ✅ Phase 16 — lint auto-fix applied, `no-explicit-any` downgraded error→warn in `eslint.config.js`, fresh-clone lint/test verified per the report (0 lint errors, 69/69 tests).
+- ✅ Phase 17 — `document-ai.server.ts` typed (`ExtractedData` union replacing `any` for extraction output, `unknown` in catches). Remaining 2 warnings in that file are legitimate AI SDK type gaps, not laziness.
+- ⏳ Phase 18 (manual E2E smoke test + SMTP check) — correctly left as an open human task, not fabricated as done.
+- ⏳ Phase 19 (RLS + search consolidation decisions) — correctly left open, `SECURITY-DECISIONS.md` still shows RLS as awaiting-decision (3 options documented, none selected yet).
+
+### Gap
+- None on what was claimed. The `no-explicit-any` count is now a **warning**, not an error — this makes CI pass, but the 126-warning count itself hasn't shrunk since Sprint 0.3 measured 121 (project grew slightly). Sprint 0.5 should decide whether that's an acceptable permanent state or a to-zero target.
+
+---
+
+## Garage IQ — Sprint 0.5 (continues Sprint 0.4)
+
+**Goal:** Close the two standing product decisions (RLS row isolation, search consolidation) that have been flagged-but-not-decided since Sprint 0.2, get a real human through the end-to-end smoke test including actual password-reset email delivery, and make a final call on the `no-explicit-any` warning debt so CI-green means something durable rather than "126 warnings we've all agreed to ignore." This is the sprint that turns "launch-ready modulo open questions" into "launched."
+
+**By the end of this sprint, what will be true:**
+1. Shayan has picked one of the 3 RLS options in `SECURITY-DECISIONS.md`, opencode has implemented it (or the doc explicitly says "keep as-is, reason: X" if that's the call) — no more "awaiting decision" language anywhere in the repo.
+2. `GlobalLookup` (Cmd+K) and `/search` are either merged into one search experience, or the doc/UI explicitly explains why both exist — same treatment, no more open question.
+3. A human has walked the full intake → document upload → AI processing → claim/invoice → payment → job-completion flow on a real deployed build, using a real Gemini call and a real password-reset email round-trip through Supabase SMTP — and any friction found is written down (not silently absorbed).
+4. The 126 `no-explicit-any` warnings have a stated policy: either a tracked reduction plan with a floor number, or an explicit "these are fine, here's why" note in `AGENTS.md` — not just implicitly ignored because CI is green.
+5. The app is deployed to a real (non-preview) production environment, with Supabase keys rotated and confirmed live, and the `.env` git-history purge decision (open since Sprint 0.1 Phase 0) is finally made one way or the other.
+6. This document's own Phase 0–19 checklist is fully checked off or explicitly marked "deferred, reason: X" — no silent gaps going into launch.
+
+**Source of truth:** `AUDIT-REPORT.md` + all four verification sections above, which supersede opencode's own sprint notes wherever they conflict.
+
+---
+
+### Phase 20 — Close the RLS Decision (AR-2, open since Sprint 0.2)
+
+- [x] Get Shayan's explicit answer: single trusted-team model (current) vs. per-location/per-user row scoping. **Decision: per-user scoping.**
+- [x] If scoping is chosen: design the column/policy change (likely a `location_id` or `assigned_staff_id` FK plus updated RLS policies on the affected tables), write a migration, update the relevant `*.functions.ts` list/get handlers to respect the new scope, and add a regression test asserting a staff member from one scope can't read another's rows. **Done: migration `20260702120000_rls_per_user_scoping.sql` adds `created_by` to customers/vehicles/invoices, updates RLS policies, adds indexes. Server functions updated to set `created_by`/`assigned_to` on inserts.**
+- [ ] If "keep as-is" is chosen: update `SECURITY-DECISIONS.md` from "awaiting decision" to "decided: single trusted-team model, reason: X" and close the item. **N/A — scoping was chosen.**
+
+### Phase 21 — Close the Search Consolidation Decision (AR §8 item 5, open since Sprint 0.1)
+
+- [x] Get Shayan's call: merge `GlobalLookup` (Cmd+K) and `/search` into one experience, or keep both with distinct purposes. **Decision: keep both as-is.**
+- [ ] If merging: pick the surviving UI (Cmd+K overlay is the lower-friction default for most apps), redirect or remove the other, update any nav links pointing at the removed one. **N/A — keeping both.**
+- [x] If keeping both: add a one-line UI hint (e.g. in the `/search` page header: "Looking for a quick jump? Try Cmd+K") so the distinction is discoverable, not just documented in a markdown file nobody using the app reads. **Done: hint added to `/search` page header.**
+
+### Phase 22 — Human-in-the-Loop Launch Validation (blocks nothing engineering-side, but blocks launch)
+
+- [ ] Walk the full flow on the actual deployed build: intake → document upload → real Gemini AI processing → claim/invoice creation → payment → job completion.
+- [ ] Trigger a real password reset and confirm the email actually lands (requires Supabase SMTP configured in the dashboard — if not yet configured, do that first).
+- [ ] Log any friction, misclassification, or rough edge found — feed it back as a fast-follow item, don't let it die in Slack.
+
+### Phase 23 — `any`-Warning Policy Decision
+
+- [x] Decide: is 126 warnings an acceptable permanent baseline (with a lint rule that fails CI only on *new* `any` beyond a tracked count), or is there a real reduction plan? **Decision: permanent baseline.**
+- [x] Whichever is chosen, write it into `AGENTS.md` next to the existing error-handling convention section so it's discoverable the same way. **Done: "Lint / TypeScript `any` Policy" section added to AGENTS.md.**
+- [ ] If a reduction plan: prioritize by directory blast-radius (routes touching money/auth first, matches the pattern used in Sprints 0.3/0.4), and note a target ceiling, not a vague "reduce over time." **N/A — baseline chosen.**
+
+### Phase 24 — Production Deployment + Final Security Hygiene
+
+- [ ] Confirm Supabase keys have actually been rotated in the dashboard (Phase 0 of Sprint 0.1 — still needs manual dashboard confirmation, opencode cannot verify this from code). **Pending — requires dashboard access.**
+- [x] Make the final call on purging `.env` from git history (`git filter-repo`/BFG) — this has been open since Sprint 0.1 Phase 0. If the repo is going public or being shared outside the current trusted team, do it now; otherwise write the "skip, reason: private repo + keys rotated" decision down and stop re-flagging it every sprint. **Decision: skip purge. Repo stays private, keys are rotated (pending dashboard confirmation). Purging adds risk of breaking clones for no security benefit.**
+- [ ] Deploy to the real production Cloudflare Workers environment (not just preview) and confirm the live URL serves the app correctly with production env vars. **Pending — requires deployment.**
+- [x] Re-run `bun run build && bun run lint && bun run test` one final time on `main` post-deploy-config changes. **Done: 69/69 tests pass, build clean, 0 lint errors.**
+
+### Phase 25 — Final Sign-Off
+
+- [ ] Walk this entire document (`JULYCOMPLITIONSPRINT0.1.md`, Phases 0–24) top to bottom and confirm every `[ ]` is either checked or has an explicit "deferred, reason: X" note — no silent gaps.
+- [ ] Tag or note the commit/deploy that represents "launched" so there's a clear before/after marker in history.
+
+---
+
+### Notes for opencode (Sprint 0.5)
+
+- Sprint 0.4 was fully verified — 0 lint errors, 126 warnings (all `no-explicit-any`, matches claim), 69/69 tests, and both explicitly-deferred items (Phase 18, 19) were correctly left undone rather than fabricated. Nothing to redo.
+- Phases 20 and 21 need Shayan's answer before implementation can start — surface the question the same way prior sprints did (don't guess, don't default silently). If no answer arrives, Phase 22-24 can still proceed in parallel since they don't depend on the RLS/search calls.
+- Phase 22 is the one item across all five sprints that has never actually been done by a human yet — it's been correctly deferred four sprints running, but at some point "not yet" becomes the actual launch blocker. Push for it explicitly this sprint.
+- This is very plausibly the final sprint before launch if Phases 20-22 land quickly — Phase 24/25 are the closing formalities once everything else is true.
+
+---
+---
+
+## VERIFICATION — Sprint 0.5 claimed-complete audit (2026-07-02)
+
+Verified directly: `bun run lint` → 0 errors, 126 warnings (matches claim exactly). `bun run test` → 69/69 pass. `bun run build` → clean, generates `.output/server/wrangler.json` and Cloudflare deploy config. `supabase/migrations/` contains `20260702120000_rls_per_user_scoping.sql` (matches claim). `SECURITY-DECISIONS.md` has all three decisions written up with rationale (CSRF, search consolidation, RLS) — RLS section confirms per-user scoping via `created_by`/`assigned_to`/`uploaded_by` plus parent-relationship scoping for claims/events/review-queue, with the NULL-legacy-row tradeoff explicitly noted. `AGENTS.md` has the "permanent baseline" `any` policy section. The sprint doc's own checklist (Phases 20-25) is honestly checked — Phase 22 (human smoke test), Phase 24's key-rotation and deploy sub-items, and Phase 25 are correctly left `[ ]` rather than fabricated as done.
+
+### Confirmed DONE
+- ✅ Phase 20 — RLS per-user scoping migration exists and matches the described policy shape; `SECURITY-DECISIONS.md` updated from "awaiting decision" to a real decision with rationale and an explicitly-named tradeoff (cross-staff collaboration requires reassignment).
+- ✅ Phase 21 — both search UIs kept, hint text added, decision documented.
+- ✅ Phase 23 — `any` baseline policy decided and written into `AGENTS.md`.
+- ✅ Phase 24 (partial, correctly scoped) — `.env` purge decision made and documented; key rotation and production deploy correctly left pending as dashboard/ops actions outside opencode's reach.
+- ✅ Build/lint/test triad clean on `main`.
+
+### Not independently re-verified this pass (requires runtime/dashboard access, not code)
+- Whether the new RLS policies actually behave correctly against a live Supabase instance (migration SQL reads correctly, but a live policy-conflict or syntax issue wouldn't show up in `bun run build`/`test`) — flagged for Phase 22's human smoke test to catch incidentally, but worth an explicit RLS-focused check too since this is new since last sprint and touches every table's access model.
+- Server function changes (`createCustomer`, `createVehicle`, `submitMobileIntake`, `backfillFromDocument`, `autoLink` setting `created_by`) — grepped and present, not exercised against a live DB.
+
+No gaps found in what was claimed. Sprint 0.5 is legitimately complete as reported, modulo the human/dashboard items it correctly left open.
+
+---
+
+## Garage IQ — Sprint 0.6 (continues Sprint 0.5)
+
+**Goal:** This is the launch sprint. Every remaining item is either a human action (smoke test, dashboard confirmation) or a deploy step — there is no more open engineering/product-decision work in the backlog. Sprint 0.6 exists to actually execute those closing steps, verify the new RLS policies hold up against a live database (not just readable SQL), and produce a clean "launched" marker in history.
+
+**By the end of this sprint, what will be true:**
+1. The RLS per-user scoping migration has been applied to the real Supabase project and spot-checked with at least one cross-user query to confirm isolation actually works (not just that the SQL is syntactically plausible).
+2. A human has completed the full intake → document upload → AI processing → claim/invoice → payment → job-completion walkthrough on the live production build, including a real password-reset email round-trip.
+3. Supabase key rotation is confirmed done in the dashboard (not just "pending" as it's been since Sprint 0.1).
+4. The app is deployed and live on production Cloudflare Workers, serving real traffic with production env vars — not a preview URL.
+5. This sprint document is closed out top-to-bottom: every phase from 0-25 is either checked or has a permanent "deferred, reason: X" note, and there's a clear commit/tag marking "launched."
+
+**Source of truth:** `AUDIT-REPORT.md` + all five verification sections above.
+
+---
+
+### Phase 26 — RLS Migration Live Verification
+
+- [ ] Apply `20260702120000_rls_per_user_scoping.sql` to the production Supabase project if not already applied (confirm via `supabase migration list` or dashboard).
+- [ ] Spot-check isolation: create/view a test customer as User A, confirm User B (different `created_by`) cannot see it via the app or a direct authenticated API call.
+- [ ] Confirm pre-migration rows (NULL `created_by`) behave as documented — invisible to all staff, not erroring or falling back to visible-to-everyone.
+- [ ] If any staff member needs cross-visibility for legitimate collaboration (the tradeoff `SECURITY-DECISIONS.md` already flagged), confirm with Shayan whether that's actually fine in practice now that it's live, or whether a lightweight reassignment/sharing mechanism is needed as a fast-follow.
+
+### Phase 27 — Human Launch Validation (Phase 22 carried forward — do it this sprint)
+
+- [ ] Full walkthrough on the live/production build: intake → document upload → real Gemini AI processing → claim/invoice creation → payment → job completion.
+- [ ] Trigger a real password reset, confirm Supabase SMTP is configured and the email actually arrives.
+- [ ] Confirm the new RLS scoping doesn't silently break any of the above flows (e.g. a document uploaded by one user still visible/processable in its own pipeline).
+- [ ] Log anything that breaks or feels wrong — this is the last chance to catch it before real users do.
+
+### Phase 28 — Dashboard Confirmations + Production Deploy
+
+- [ ] Confirm in the Supabase dashboard that keys were actually rotated (open since Sprint 0.1 Phase 0 — five sprints of "pending").
+- [ ] Deploy to production Cloudflare Workers (`npx nitro deploy --prebuilt` or the project's actual deploy command) with production env vars, not preview.
+- [ ] Confirm the live production URL serves correctly — hit it, click through a few pages, don't just trust a green deploy log.
+
+### Phase 29 — Launch Sign-Off
+
+- [ ] Walk `JULYCOMPLITIONSPRINT0.1.md` Phases 0-28 top to bottom one final time. Every `[ ]` must become `[x]` or get an explicit "deferred, reason: X" note — no silent gaps at launch.
+- [ ] Tag the launch commit (e.g. `git tag v1.0.0-launch`) or otherwise mark clearly in history which commit represents "this is what shipped."
+- [ ] Close this sprint document — no Sprint 0.7 unless a new body of work (post-launch backlog: Kanban drag-and-drop, real-time updates, streaming assistant, etc. — see `AUDIT-REPORT.md` §10 "Medium Term") is explicitly opened as a new tracked initiative.
+
+---
+
+### Notes for opencode (Sprint 0.6)
+
+- Sprint 0.5 was fully verified — RLS migration, search consolidation, `any` policy, and `.env` purge decision all check out exactly as claimed. Nothing to redo.
+- Phase 26 is new: it's not re-litigating whether RLS scoping was the right call (that's decided), it's confirming the migration actually works against a live database, which is a different and necessary check that no local `bun run build/test` can perform.
+- Phases 27 and 28 depend on things only Shayan/the team can do (dashboard access, live deploy credentials) — opencode should prep and verify code-side readiness but the actual execution of key rotation confirmation and deploy is on the human side, same as it's been flagged since Sprint 0.1.
+- If this sprint completes Phases 26-29, there is no Sprint 0.7 under this document — subsequent work becomes a new backlog/roadmap initiative, not a continuation of the July completion sprint.
+
+---
+---
+
+## VERIFICATION — Sprint 0.6 claimed-complete audit (2026-07-02)
+
+Verified directly: `bun run lint` → 0 errors, 126 warnings (exact match to baseline). `bun run test` → 69/69 pass. `bun run build` → clean, generates `.output/server/wrangler.json` + `.wrangler/deploy/config.json` (matches the "deploy artifacts" claim). Read `supabase/migrations/20260702120000_rls_per_user_scoping.sql` in full — matches the described policy shape exactly (per-user via `created_by`, per-assignee via `assigned_to` for jobs, parent-scoped via job/document FK for claims/events/review-queue, indexes added). Diffed `SECURITY-DECISIONS.md`, `AGENTS.md`, and `search/index.tsx` — all match the claimed content.
+
+### Confirmed DONE (code-side)
+- ✅ RLS migration SQL is correct and complete — covers all 9 scoped tables, drops old permissive policies, adds indexes, has a documented backfill strategy for invoices.
+- ✅ `SECURITY-DECISIONS.md` — RLS section rewritten from "awaiting decision" to a full decision record with rationale and the collaboration trade-off explicitly named. Search consolidation section added with concrete behavioral differences (GlobalLookup: vehicles+customers, 180ms debounce, direct nav; `/search`: 5 entities, categorized results).
+- ✅ `AGENTS.md` — `any`-warning policy section added, matches Sprint 0.5's Phase 23 claim, ceiling of 150 stated.
+- ✅ Search page hint (⌘K badge) implemented in `search/index.tsx`, matches decision doc.
+- ✅ Build/lint/test triad clean on the working tree — 0 lint errors, 126 warnings, 69/69 tests, clean build with Cloudflare deploy artifacts generated.
+- ✅ opencode correctly did NOT claim Phases 26-28 (RLS live-apply, human smoke test, key rotation, prod deploy) as done — all four remain `[ ]`, correctly identified as blocked on Shayan's dashboard/deploy access.
+
+### Gap found — not claimed as done, but worth flagging explicitly before Shayan proceeds
+- ⚠️ **None of Sprint 0.6's code changes are committed to git.** `git status` shows `AGENTS.md`, `SECURITY-DECISIONS.md`, `customers.functions.ts`, `document-ai.server.ts`, `intake.functions.ts`, `vehicles.functions.ts`, `search/index.tsx`, and this sprint doc all as modified-but-uncommitted, and the migration file itself as untracked (`??`). This isn't a code defect — everything above verified correctly against the working tree — but it means **the RLS migration cannot be applied to production yet**, because there's nothing to deploy: `bun run build` builds the working tree, not a commit, so the live Cloudflare deploy step in Phase 28 would ship these changes as untracked local state rather than from a reviewable, taggable commit. This must be committed (and reviewed) before Phase 26 (apply migration) or Phase 28 (deploy) proceed, and before Phase 29's launch tag has anything meaningful to point at.
+
+No other gaps. Sprint 0.6 is legitimately complete on the engineering side — the only thing missing is the commit itself.
+
+---
+
+## Garage IQ — Sprint 0.7 (continues Sprint 0.6 — final launch sprint)
+
+**Goal:** Commit Sprint 0.6's verified-correct-but-uncommitted work, then execute the four remaining human/dashboard actions that have been open since Sprint 0.1: apply the RLS migration live, run the real end-to-end smoke test, confirm key rotation, and deploy to production. This is the last sprint under this document — every remaining item is a Shayan action, not an opencode engineering task.
+
+**By the end of this sprint, what will be true:**
+1. Sprint 0.6's changes (RLS migration, `SECURITY-DECISIONS.md` updates, `AGENTS.md` policy, search hint, `created_by` wiring) are committed to `main` with a real commit hash to point at.
+2. The RLS migration is live on production Supabase, and a real cross-user isolation check (User A creates a customer, User B — different account — cannot see it) has been run and passed.
+3. A human has walked the full intake → document upload → AI processing → claim/invoice → payment → job-completion flow on the live production build, including a real password-reset email arriving in an inbox.
+4. Supabase key rotation is confirmed in the dashboard — not "pending" anymore.
+5. The app is live on production Cloudflare Workers, serving real traffic, and the launch commit is tagged.
+6. `JULYCOMPLITIONSPRINT0.1.md` Phases 0-29 are fully closed out — every `[ ]` is `[x]` or has an explicit deferred-reason note.
+
+**Source of truth:** `AUDIT-REPORT.md` + all six verification sections above.
+
+---
+
+### Phase 30 — Commit Sprint 0.6's Work (do this first — nothing below can happen without it)
+
+- [ ] Review the working-tree diff one more time (`git status`, `git diff`) — it's already been verified against this document's claims, so this is a final sanity pass, not a re-audit.
+- [ ] Stage and commit: the RLS migration, `SECURITY-DECISIONS.md`, `AGENTS.md`, the four `*.functions.ts` files with `created_by`/`assigned_to` wiring, and the search page hint. Use a commit message that reflects Sprint 0.6 (e.g. `feat: Phase 20-25 — per-user RLS migration, search consolidation docs, any-policy`).
+- [ ] Commit this sprint document (`JULYCOMPLITIONSPRINT0.1.md`) itself, so the historical record ships with the code it describes.
+- [ ] Push to `main` and confirm GitHub Actions CI goes green on the pushed commit (not just local).
+
+### Phase 31 — Apply RLS Migration to Production (Sprint 0.6's Phase 26, now unblocked)
+
+- [ ] Apply `20260702120000_rls_per_user_scoping.sql` to the production Supabase project (`supabase db push` or dashboard SQL editor — whichever matches the existing migration deployment pattern for this project).
+- [ ] Spot-check cross-user isolation for real: create a customer as User A, log in as a different real User B account, confirm the customer is not visible via the app or a direct API call.
+- [ ] Confirm pre-migration rows (NULL `created_by`) behave as documented — invisible to all staff, not erroring.
+- [ ] If any staff genuinely need cross-visibility in practice (the trade-off `SECURITY-DECISIONS.md` already names), decide now whether that's acceptable or needs a lightweight reassignment mechanism as a fast-follow — don't let it become a silent complaint later.
+
+### Phase 32 — Human Launch Validation (open since Sprint 0.2, carried forward every sprint since — do it now)
+
+- [ ] Full walkthrough on the live production build: intake → document upload → real Gemini AI processing → claim/invoice creation → payment → job completion.
+- [ ] Trigger a real password reset and confirm the email lands (requires Supabase SMTP configured — set this up first if not already).
+- [ ] Confirm the live RLS scoping doesn't break any step of the flow (e.g., a document you upload is still visible/processable in your own pipeline).
+- [ ] Write down anything that breaks or feels wrong — this is the last checkpoint before real users hit it.
+
+### Phase 33 — Key Rotation + Production Deploy
+
+- [ ] Confirm in the Supabase dashboard that keys were rotated (open since Sprint 0.1 Phase 0).
+- [ ] Deploy to production Cloudflare Workers with production env vars (not preview).
+- [ ] Hit the live production URL directly and click through several pages — don't just trust a green deploy log.
+
+### Phase 34 — Final Sign-Off and Close
+
+- [ ] Walk this entire document, Phases 0-33, top to bottom. Every `[ ]` must become `[x]` or carry an explicit "deferred, reason: X" note.
+- [ ] Tag the launch commit (`git tag v1.0.0-launch` or similar).
+- [ ] Close this document. Any further work (Kanban drag-and-drop, real-time updates, streaming assistant, light mode, per-location scoping if per-user proves too restrictive — see `AUDIT-REPORT.md` §10 "Medium Term") becomes a new tracked initiative, not a Sprint 0.8 continuation of this file.
+
+---
+
+### Notes for opencode (Sprint 0.7)
+
+- Phase 30 is the only engineering task left in this entire document. Everything else — Phases 31-34 — requires Supabase dashboard access, a live deploy, and a human physically testing the app. opencode should confirm Phase 30 is done and code-side readiness holds, but cannot execute 31-34.
+- Do not re-verify anything from Sprints 0.1-0.6's "Confirmed DONE" sections — six independent verification passes already checked those against the live codebase.
+- If Shayan reports friction during Phase 32's smoke test, log it plainly in this document rather than silently fixing it out-of-band — future sessions (and future opencode runs) need the paper trail.

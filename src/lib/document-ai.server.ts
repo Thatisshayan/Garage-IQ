@@ -364,6 +364,7 @@ async function autoLink(
       due_date: extracted?.due_date ?? null,
       payment_status: paid ? "paid" : "unpaid",
       paid_at: paid ? new Date().toISOString() : null,
+      created_by: doc.uploaded_by,
     });
     await applyJobEvent(supabase, {
       jobId,
@@ -395,7 +396,7 @@ export async function backfillFromDocument(
   if (!customerId && customerName) {
     const { data: cust } = await supabase
       .from("customers")
-      .insert({ name: customerName })
+      .insert({ name: customerName, created_by: userId })
       .select("id")
       .single();
     if (cust) {
@@ -407,7 +408,7 @@ export async function backfillFromDocument(
   if (!vehicleId && vin && customerId) {
     const { data: veh } = await supabase
       .from("vehicles")
-      .insert({ vin, customer_id: customerId })
+      .insert({ vin, customer_id: customerId, created_by: userId })
       .select("id")
       .single();
     if (veh) {
@@ -470,6 +471,7 @@ export async function backfillFromDocument(
           due_date: ex.due_date ?? null,
           payment_status: ex.payment_status === "paid" ? "paid" : "unpaid",
           paid_at: ex.payment_status === "paid" ? new Date().toISOString() : null,
+          created_by: userId,
         });
       } else if (doc.type === "insurance_document") {
         await supabase.from("insurance_claims").insert({

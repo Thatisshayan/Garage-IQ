@@ -17,17 +17,36 @@
 
 ---
 
+## Search Consolidation (AR §8 item 5)
+
+**Decision:** Keep both search UIs as intentionally distinct tools.
+
+**Rationale:**
+- **GlobalLookup (Cmd+K):** Quick-jump dropdown. Searches vehicles + customers only. 180ms debounce. Navigates directly to vehicle detail. For "I know who I'm looking for."
+- **/search page:** Full-page form. Searches across 5 entities (customers, vehicles, jobs, documents, invoices). Returns categorized results with links. For "I need to find something I don't have a direct path to."
+
+These serve genuinely different purposes — quick-jump vs. comprehensive search — and are not duplicates.
+
+**Discoverability:** A hint in the `/search` page header reads: "Looking for a quick jump? Try ⌘K" so users can discover the faster path without reading docs.
+
+**Recorded:** 2026-07-02
+
+---
+
 ## RLS Row Isolation (AR-2)
 
-**Status:** FLAGGED TO SHAYAN — product decision required.
+**Decision:** Per-user scoping — each staff member sees only records they created or are assigned to.
 
-**Question:** Should staff members see only their own records, or all records in the garage?
+**Rationale:**
+- Customers, vehicles: scoped by `created_by` (set on insert to the creating user)
+- Jobs: scoped by `assigned_to` (set on creation, reassigned as needed)
+- Documents: scoped by `uploaded_by`
+- Invoices, payments, claim_templates: scoped by `created_by`
+- Insurance claims, job_status_events: scoped via their parent job's `assigned_to`
+- Document review queue: scoped via the document's `uploaded_by`
 
-**Current behavior:** All authenticated staff can read/modify ALL rows in ALL tables. No row-level isolation between staff members.
+**Implementation:** Supabase RLS policies enforce per-user isolation at the database level. Server functions set `created_by`/`assigned_to` on inserts. Existing pre-migration rows with NULL `created_by` are invisible to all staff (correct: they predate the scoping model).
 
-**Options:**
-1. **Keep current model (trusted team)** — All staff see everything. Simpler, appropriate for small garages where everyone trusts each other.
-2. **Per-user scoping** — Each staff member sees only records they created or are assigned to. More secure but adds complexity and may break collaborative workflows.
-3. **Per-location scoping** — If the garage has multiple locations, staff only see their location's records. Requires a `location_id` column on all tables.
+**Trade-off:** Collaborative workflows where Staff B needs to work on a customer created by Staff A require reassignment or shared ownership. This is intentional — the model prioritizes data isolation over convenience.
 
-**Awaiting decision from Shayan before implementing.**
+**Recorded:** 2026-07-02
