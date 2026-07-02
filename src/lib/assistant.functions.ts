@@ -49,13 +49,7 @@ const SYSTEM = `You are a read-only assistant for a car-garage database. Given a
 
 Return JSON of shape: {"table":"...","columns":"*","filters":[{"column":"...","op":"eq|neq|ilike|gt|gte|lt|lte|in|is","value":...}],"order":{"column":"created_at","ascending":false},"limit":25,"explanation":"plain English"}`;
 
-function parseJson(text: string): any {
-  const m = text.match(/```json\s*([\s\S]*?)```/i) || text.match(/```\s*([\s\S]*?)```/i);
-  const raw = m ? m[1] : text;
-  const s = raw.indexOf("{");
-  const e = raw.lastIndexOf("}");
-  return JSON.parse(raw.slice(s, e + 1));
-}
+import { parseJson, isRateLimited } from "./utils";
 
 export const aiAssistantQuery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -63,6 +57,9 @@ export const aiAssistantQuery = createServerFn({ method: "POST" })
     z.object({ question: z.string().min(2).max(500) }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    if (isRateLimited(`assistant:${context.user.id}`, 20, 60_000)) {
+      return { error: "Rate limit exceeded. Try again in a minute." };
+    }
     const gateway = getAiGateway();
     const model = gateway("google/gemini-3-flash-preview");
     const result = await generateText({

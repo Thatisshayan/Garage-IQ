@@ -76,14 +76,7 @@ const CLASSIFY_AUTO = 0.9;
 const CLASSIFY_REVIEW = 0.7;
 const LINK_AUTO = 0.5;
 
-function parseJson(text: string): any {
-  const m = text.match(/```json\s*([\s\S]*?)```/i) || text.match(/```\s*([\s\S]*?)```/i);
-  const raw = m ? m[1] : text;
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("No JSON in model output");
-  return JSON.parse(raw.slice(start, end + 1));
-}
+import { parseJson } from "./utils";
 
 async function callModelWithFile(
   prompt: string,

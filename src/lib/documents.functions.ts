@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { isRateLimited } from "./utils";
 
 const DOC_TYPES = [
   "invoice",
@@ -48,6 +49,9 @@ export const processDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    if (isRateLimited(`process:${context.user.id}`, 10, 60_000)) {
+      return { ok: false, error: "Rate limit exceeded. Try again in a minute." };
+    }
     const { processDocumentNow } = await import("./document-ai.server");
     try {
       await processDocumentNow(context.supabase, data.id);

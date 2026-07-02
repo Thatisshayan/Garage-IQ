@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { generateText } from "ai";
 import { getAiGateway } from "./ai-gateway.server";
+import { sanitizeLike, isRateLimited } from "./utils";
 
 // Use AI vision to extract a VIN and/or license plate from a photo.
 // Input: base64 data URL of the image.
@@ -16,7 +17,10 @@ export const extractVinFromPhoto = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    if (isRateLimited(`intake:${context.user.id}`, 15, 60_000)) {
+      return { error: "Rate limit exceeded. Try again in a minute." };
+    }
     const provider = getAiGateway();
     const model = provider("google/gemini-2.5-flash");
 
@@ -90,7 +94,7 @@ export const findDuplicateCustomer = createServerFn({ method: "POST" })
     if (!data.name && !data.phone) return [];
     let q = context.supabase.from("customers").select("id,name,phone,email").limit(8);
     if (data.phone) q = q.eq("phone", data.phone);
-    else if (data.name) q = q.ilike("name", `%${data.name}%`);
+    else if (data.name) q = q.ilike("name", `%${sanitizeLike(data.name)}%`);
     const { data: rows } = await q;
     return rows ?? [];
   });
