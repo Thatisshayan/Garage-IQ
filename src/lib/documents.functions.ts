@@ -13,6 +13,76 @@ const DOC_TYPES = [
   "unclassified",
 ] as const;
 
+// Per-type Zod schemas for extracted_data (AR-5 fix)
+const lineItemSchema = z.object({
+  description: z.string(),
+  quantity: z.number().nullable(),
+  unit_price: z.number().nullable(),
+  total: z.number().nullable(),
+});
+
+const extractedInvoice = z.object({
+  vendor: z.string().nullable(),
+  invoice_date: z.string().nullable(),
+  due_date: z.string().nullable(),
+  line_items: z.array(lineItemSchema).default([]),
+  subtotal: z.number().nullable(),
+  tax: z.number().nullable(),
+  total: z.number().nullable(),
+  currency: z.string().nullable(),
+  customer_name: z.string().nullable(),
+  vin: z.string().nullable(),
+  payment_status: z.enum(["unpaid", "paid", "overdue", "disputed"]).nullable(),
+  field_confidence: z.record(z.string(), z.number()).default({}),
+});
+
+const extractedInsurance = z.object({
+  claim_number: z.string().nullable(),
+  insurer: z.string().nullable(),
+  policy_number: z.string().nullable(),
+  claim_status: z.enum(["pending", "approved", "denied", "partial"]).nullable(),
+  approved_amount: z.number().nullable(),
+  effective_date: z.string().nullable(),
+  customer_name: z.string().nullable(),
+  vin: z.string().nullable(),
+  field_confidence: z.record(z.string(), z.number()).default({}),
+});
+
+const extractedPurchaseOrder = z.object({
+  vendor: z.string().nullable(),
+  po_number: z.string().nullable(),
+  date: z.string().nullable(),
+  line_items: z.array(lineItemSchema.omit({ total: true })).default([]),
+  total: z.number().nullable(),
+  vin: z.string().nullable(),
+  field_confidence: z.record(z.string(), z.number()).default({}),
+});
+
+const extractedReleaseForm = z.object({
+  signer_name: z.string().nullable(),
+  signature_date: z.string().nullable(),
+  authorization_status: z.enum(["signed", "unsigned", "declined"]).nullable(),
+  vin: z.string().nullable(),
+  customer_name: z.string().nullable(),
+  field_confidence: z.record(z.string(), z.number()).default({}),
+});
+
+const extractedReceipt = z.object({
+  vendor: z.string().nullable(),
+  date: z.string().nullable(),
+  total: z.number().nullable(),
+  category: z.string().nullable(),
+  field_confidence: z.record(z.string(), z.number()).default({}),
+});
+
+const ExtractedDataSchema = z.discriminatedUnion("type", [
+  extractedInvoice.extend({ type: z.literal("invoice") }),
+  extractedInsurance.extend({ type: z.literal("insurance_document") }),
+  extractedPurchaseOrder.extend({ type: z.literal("purchase_order") }),
+  extractedReleaseForm.extend({ type: z.literal("release_form") }),
+  extractedReceipt.extend({ type: z.literal("receipt") }),
+]).nullable();
+
 export const createDocumentRecord = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -147,7 +217,7 @@ export const updateDocument = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid(),
         type: z.enum(DOC_TYPES).optional(),
-        extracted_data: z.any().optional(),
+        extracted_data: ExtractedDataSchema.optional(),
         job_id: z.string().uuid().nullable().optional(),
         customer_id: z.string().uuid().nullable().optional(),
         vehicle_id: z.string().uuid().nullable().optional(),

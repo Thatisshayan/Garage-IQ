@@ -106,3 +106,96 @@ These are the items the audit marked **Critical** — treat as launch blockers, 
 - Phase 0 and Phase 1 are the explicit "decouple from Lovable" ask — treat as highest priority after the security bleeding-stop.
 - Where a task says "flag to user" / "confirm before deciding" — these are product/business decisions (data isolation model, multi-currency, light mode), not engineering calls. Don't unilaterally decide; surface the question back to Shayan.
 - `.env` has been added to `.gitignore` already; `.env` itself is still tracked in git history as of this writing (untracking is Phase 0 task 2).
+
+---
+---
+
+## VERIFICATION — Sprint 0.1 claimed-complete audit (2026-07-02)
+
+Verified directly against the codebase (grep, file reads, live `bun run build`) rather than trusting the commit message. Result: **mostly true, three gaps opencode missed or skipped silently.**
+
+### Confirmed DONE
+- ✅ `.env` untracked, `.gitignore` correct, `.env.example` present with all required vars incl. `GOOGLE_GENERATIVE_AI_API_KEY`.
+- ✅ `bun run build` succeeds clean (Vite + Nitro/Cloudflare output generated, no errors).
+- ✅ Lovable fully decoupled — zero `lovable` references in `src/`, `.lovable/` directory gone, AI gateway now uses `@ai-sdk/google` directly.
+- ✅ `parseJson` extracted to shared `src/lib/utils.ts`, used by both `assistant.functions.ts` and `document-ai.server.ts`.
+- ✅ Rate limiting (`isRateLimited`) added to `assistant`, `intake`, and `processDocument` — in-memory, per-user, sane limits (10-20 req/min).
+- ✅ `sanitizeLike` added and used in `findDuplicateCustomer`.
+- ✅ Pagination added to list queries (`page`/`limit`/`offset`, capped at 200) — verified on `customers.functions.ts`, matches audit's `AR#` list scope.
+- ✅ `todayBoard` now filters by `created_at >= today` (previously fetched all active jobs regardless of date).
+- ✅ `exportEntity` capped at `MAX_ROWS = 10000` with a truncation warning logged.
+- ✅ N+1 in `vehicle-history.functions.ts` fixed via `Promise.all` batching (jobs/docs/invoices/claims and vehicles/customers each batched, not sequential per-row).
+- ✅ `updateVehicle` added.
+- ✅ Mobile sidebar implemented (`Menu`/`X` icons, hamburger toggle in `route.tsx`).
+- ✅ `URL.revokeObjectURL` present in both `m/intake.tsx` and `claims/fill.$jobId.tsx` — memory leak fixed.
+- ✅ Light mode: kept `.dark` forced intentionally, with a code comment documenting it's a deliberate fallback — correctly treated as a documented decision, not silently ignored.
+
+### Gaps — claimed or implied done, NOT actually done
+- ❌ **AR-5 (MED) — `extracted_data: z.any()` still unfixed.** `documents.functions.ts:150` is untouched. No discriminated Zod schema per `doc_type` was added. This is a real gap against Phase 2.
+- ❌ **AR-3 (HIGH) — `supabaseAdmin` still exported, not locked down or documented.** It's now lazy-loaded via a `Proxy` (nicer than before) but still a bare exported admin client with only a one-line comment suggesting dynamic import. No usage-surface lock-down, no confirmation it's needed, no removal. Audit item not resolved either way.
+- ❌ **Zero tests still exist.** `find src -name "*.test.*"` returns nothing. This was explicitly called out as launch-blocking for money-handling code (state machine, payments) in Phase 3 and the audit's "Immediate" list. Untouched.
+- ⚠️ **Not verified in this pass (lower confidence, worth opencode confirming explicitly next sprint):** CSRF decision documented anywhere, client-side Zod+RHF wiring, password reset flow, GlobalLookup/`/search` consolidation, `any`-type reduction on the money path, error-handling pattern standardization, RLS row-isolation product decision surfaced to Shayan, git history purge of `.env`, actual Supabase key rotation (both require dashboard access — cannot verify from code).
+
+---
+
+## Garage IQ — Sprint 0.2 (continues Sprint 0.1)
+
+**Goal:** Close the launch-blocking gaps Sprint 0.1 left open — untested money paths, the unresolved `extracted_data` schema hole, and the dangling `supabaseAdmin` — then finish the "should fix pre-launch" UX items (password reset, client-side validation, search consolidation) so the app is genuinely launch-ready, not just "mostly launch-ready."
+
+**By the end of this sprint, what will be true:**
+1. The state machine, payment flow, and auth flow have smoke-test coverage — a regression in money-handling code fails CI instead of shipping silently.
+2. `extracted_data` can no longer accept arbitrary JSON — each `doc_type` has a real schema, so a malformed AI extraction or manual API abuse gets rejected at the boundary instead of silently corrupting downstream claims/invoices.
+3. `supabaseAdmin` is either deleted (if genuinely unused) or has a documented, narrow, audited call site — no more "exported service-role client nobody explains."
+4. Auth is no longer a dead end — users who forget their password can recover their account without staff intervention.
+5. Forms give real-time validation feedback instead of failing silently on submit (HTML5 `required` only today).
+6. There's one search experience, not two competing ones.
+7. CSRF posture and the RLS row-isolation model are explicit written decisions in the repo (even if the decision is "no change needed"), not open questions.
+
+**Source of truth:** `AUDIT-REPORT.md` (AR# refs below) + the Verification section directly above, which is authoritative over anything opencode's own sprint notes claimed.
+
+---
+
+### Phase 6 — Money-Path Test Coverage (launch-blocking)
+
+- [ ] Set up a test runner (Vitest — already Vite-native, matches the stack) if not already configured; confirm `bun run test` works.
+- [ ] **State machine smoke tests** — cover every transition in the diagram from `AUDIT-REPORT.md` §5 (`pending → awaiting_insurance → parts_ordered → in_progress → awaiting_payment → completed`, plus the `insurance_denied`/`flagged` reset path). Assert illegal transitions are rejected.
+- [ ] **Payment flow smoke tests** — `payments.functions.ts` (add/delete/setJobTotalOwed) and `invoices.functions.ts` (markPaid). Cover the "invoice_paid" trigger that advances job status.
+- [ ] **Auth smoke test** — login, session middleware (`requireSupabaseAuth`) rejects unauthenticated calls, Google OAuth redirect doesn't 500.
+- [ ] **Document upload/processing pipeline smoke test** — at minimum, one happy-path test through `create → process → classify → extract` using a mocked AI response (don't hit the real Gemini API in CI).
+- [ ] Wire tests into whatever CI exists (or note in Phase 8 if there is none yet) so this can't silently regress again.
+
+### Phase 7 — Close Remaining Security/Quality Gaps (AR §6/§7)
+
+- [ ] **AR-5:** Add a discriminated Zod schema for `extracted_data` per `doc_type` (invoice, insurance document, purchase order, release form, receipt — the 5 types from AR §5). Replace `z.any().optional()` at `documents.functions.ts:150`.
+- [ ] **AR-3:** Decide `supabaseAdmin`'s fate — grep every call site first (`grep -rn "supabaseAdmin" src/`). If zero real call sites beyond the Proxy definition itself, delete it. If there are call sites, document why the service-role client is needed there and confirm it's not reachable from user input.
+- [ ] **AR-4 / CSRF:** Write the one-paragraph decision (Bearer-token-only, no cookie session ⇒ lower CSRF exposure) directly into `AUDIT-REPORT.md` or a new `SECURITY-DECISIONS.md`, rather than leaving it as an open audit line item forever.
+- [ ] **AR-2 / RLS row isolation:** This is Shayan's call, not opencode's — surface the question explicitly (single trusted-team model vs. per-location/per-user scoping) and record whatever answer comes back.
+- [ ] Standardize error handling (throw vs. `{ error }` return) across `*.functions.ts` — pick one pattern, document it in `AGENTS.md`, apply it at least to newly-touched files this sprint.
+- [ ] Reduce `any` typing on the money path specifically: `invoices.functions.ts`, `payments.functions.ts`, `claims.functions.ts`, and the AI extraction output types in `document-ai.server.ts`.
+
+### Phase 8 — Remaining UX Launch Blockers (AR §8, "High Priority" tier)
+
+- [ ] **Password reset flow.** Add `supabase.auth.resetPasswordForEmail` + a reset-confirmation route. This was flagged as an auth dead-end in both the audit and Sprint 0.1 — still missing.
+- [ ] **Client-side form validation.** Wire the Zod schemas that already exist server-side into React Hook Form on the client for at least the intake, job creation, and customer forms — replace HTML5 `required`-only validation.
+- [ ] **Consolidate search.** Decide whether `GlobalLookup` (Cmd+K) and the `/search` page serve genuinely different purposes (quick-jump vs. full search) — if not, merge; if so, document the distinction in the UI itself (e.g. a hint in the search page pointing to Cmd+K for quick lookups).
+- [ ] Confirm loading skeletons (added in Sprint 0.1 per commit history) cover jobs list and document list, not just dashboard — audit called out all three.
+
+### Phase 9 — Dead Code Cleanup (cheap, do anytime this sprint)
+
+- [ ] Remove or wire up: `components/ui/sidebar.tsx`, `components/ui/form.tsx`, `PageShell`, `MotionDiv` (`motion-primitives.tsx`) — confirmed still unused as of this verification pass.
+
+### Phase 10 — Pre-Launch Re-Check
+
+- [ ] Re-run `grep -rn "z.any()" src/lib/` — should return zero hits in money/document-extraction paths after Phase 7.
+- [ ] Re-run `find src -name "*.test.*"` — should be non-empty after Phase 6.
+- [ ] Full `bun run build && bun run lint && bun run test` clean pass.
+- [ ] Manual smoke test end-to-end: intake → document upload → AI processing → claim/invoice creation → payment → job completion — same as Sprint 0.1's Phase 5, re-run because Phase 6-9 touch these exact paths.
+- [ ] Confirm `.env` git history purge decision (Sprint 0.1 Phase 0) was actually made, one way or the other — it was left open.
+
+---
+
+### Notes for opencode (Sprint 0.2)
+
+- Sprint 0.1 was verified against the live codebase, not taken on faith — the three real gaps (untested money paths, `z.any()` extraction hole, dangling `supabaseAdmin`) are the actual priority order for this sprint, ahead of the UX items.
+- Don't re-do anything in the "Confirmed DONE" list above — it was checked directly (grep + file reads + a clean `bun run build`), not inferred from commit messages.
+- Same rule as Sprint 0.1: anything marked as a product decision (RLS model, CSRF posture, search consolidation direction) gets surfaced to Shayan, not decided unilaterally.
