@@ -14,13 +14,23 @@ const VehicleInput = z.object({
 
 export const listVehicles = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        page: z.coerce.number().int().min(1).default(1),
+        limit: z.coerce.number().int().min(1).max(200).default(50),
+      })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const offset = (data.page - 1) * data.limit;
+    const { data: rows, error, count } = await context.supabase
       .from("vehicles")
-      .select("*, customer:customers(name)")
-      .order("created_at", { ascending: false });
+      .select("*, customer:customers(name)", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(offset, offset + data.limit - 1);
     if (error) throw new Error(error.message);
-    return data;
+    return { rows: rows ?? [], total: count ?? 0, page: data.page, limit: data.limit };
   });
 
 export const createVehicle = createServerFn({ method: "POST" })
@@ -49,6 +59,26 @@ export const deleteVehicle = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("vehicles").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const updateVehicle = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => VehicleInput.extend({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { id, ...rest } = data;
+    const { error } = await context.supabase
+      .from("vehicles")
+      .update({
+        make: rest.make || null,
+        model: rest.model || null,
+        year: rest.year || null,
+        vin: rest.vin || null,
+        license_plate: rest.license_plate || null,
+        color: rest.color || null,
+      })
+      .eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

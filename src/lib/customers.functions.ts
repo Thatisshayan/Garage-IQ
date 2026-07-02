@@ -11,13 +11,23 @@ const CustomerInput = z.object({
 
 export const listCustomers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        page: z.coerce.number().int().min(1).default(1),
+        limit: z.coerce.number().int().min(1).max(200).default(50),
+      })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const offset = (data.page - 1) * data.limit;
+    const { data: rows, error, count } = await context.supabase
       .from("customers")
-      .select("*")
-      .order("created_at", { ascending: false });
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(offset, offset + data.limit - 1);
     if (error) throw new Error(error.message);
-    return data;
+    return { rows: rows ?? [], total: count ?? 0, page: data.page, limit: data.limit };
   });
 
 export const getCustomer = createServerFn({ method: "GET" })

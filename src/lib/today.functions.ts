@@ -1,16 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-// Active jobs grouped by blocker for the day-of view.
+// Active jobs grouped by status for the day-of view.
+// Filters to jobs created or updated today.
 export const todayBoard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
     const { data: jobs, error } = await context.supabase
       .from("jobs")
       .select(
         "id,status,description,flagged,reported_problem,odometer,created_at,total_owed,customer:customers(id,name,phone),vehicle:vehicles(id,make,model,year,license_plate,vin)",
       )
       .neq("status", "completed")
+      .gte("created_at", `${today}T00:00:00`)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
 

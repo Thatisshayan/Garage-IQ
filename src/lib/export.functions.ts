@@ -31,8 +31,15 @@ export const exportEntity = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase.from(data.entity).select("*");
+    const MAX_ROWS = 10000;
+    const { data: rows, error } = await context.supabase
+      .from(data.entity)
+      .select("*")
+      .limit(MAX_ROWS);
     if (error) throw new Error(error.message);
+    if ((rows?.length ?? 0) >= MAX_ROWS) {
+      console.warn(`[Export] ${data.entity} hit row cap of ${MAX_ROWS} — results truncated`);
+    }
     if (data.format === "json")
       return { filename: `${data.entity}.json`, content: JSON.stringify(rows, null, 2), mime: "application/json" };
     return { filename: `${data.entity}.csv`, content: toCsv(rows ?? []), mime: "text/csv" };
