@@ -93,11 +93,12 @@ bun install
 
 ### 2. Environment Variables
 
-Create a `.env` file:
+Create a `.env` file (see `.env.example` for all variables):
 
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_PUBLISHABLE_KEY=your_anon_key
+GOOGLE_GENERATIVE_AI_API_KEY=your_google_ai_key
 ```
 
 ### 3. Database Setup
@@ -157,6 +158,27 @@ The app will be available at `http://localhost:3000`.
 - **RLS everywhere**: Row-level security on all tables, enforced at the database level
 - **AI is non-blocking**: Core workflow works without AI; classification/extraction enhance but don't gate
 - **State machine is audited**: Every status transition writes an event row with source, actor, and reason
+
+---
+
+## Testing
+
+```bash
+bun run test       # Run all tests
+bun run test:watch # Watch mode
+```
+
+Tests live alongside source as `*.test.ts`:
+- `src/lib/state-machine.test.ts` — exhaustive state machine transitions (53 tests)
+- `src/lib/extract-schemas.test.ts` — payment validation + extraction schemas (16 tests)
+
+---
+
+## Security
+
+See `SECURITY-DECISIONS.md` for detailed decisions on:
+- CSRF posture (Bearer-only auth, no cookie sessions)
+- RLS row isolation model (open question — pending product decision)
 
 ---
 
@@ -270,8 +292,7 @@ src/
 │   ├── *.server.ts             # Server-only modules
 │   └── utils.ts                # Helpers
 ├── integrations/
-│   ├── supabase/               # Database client + types
-│   └── lovable/                # OAuth integration
+│   └── supabase/               # Database client + types
 ├── components/
 │   ├── ui/                     # shadcn/ui components
 │   ├── global-lookup.tsx       # Cmd+K search
@@ -287,6 +308,8 @@ src/
 bun run dev        # Start development server
 bun run build      # Production build
 bun run preview    # Preview production build
+bun run test       # Run Vitest tests
+bun run test:watch # Run tests in watch mode
 bun run lint       # Run ESLint
 bun run format     # Format with Prettier
 ```
@@ -299,6 +322,7 @@ bun run format     # Format with Prettier
 |----------|-------------|----------|
 | `VITE_SUPABASE_URL` | Supabase project URL | Yes |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon/public key | Yes |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Google Generative AI key (Gemini Flash) | Yes |
 
 ---
 
