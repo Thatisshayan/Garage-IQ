@@ -5,10 +5,12 @@ import { motion } from "framer-motion";
 import { dashboardStats } from "@/lib/jobs.functions";
 import { Counter, stagger, itemUp } from "@/components/motion-primitives";
 import { ArrowUpRight, Activity, AlertTriangle, Inbox, Receipt, ShieldAlert } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({ meta: [{ title: "Overview — Garage IQ" }] }),
   component: Dashboard,
+  pendingComponent: DashboardSkeleton,
 });
 
 const STATUS_META: Record<string, { label: string; tone: string }> = {
@@ -151,5 +153,32 @@ function QuickCard({ to, title, desc, accent }: { to: string; title: string; des
         <div className="mt-1 text-xs text-muted-foreground">{desc}</div>
       </div>
     </Link>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="p-8 max-w-[1400px] mx-auto space-y-8">
+      <div className="flex items-end justify-between gap-6 pt-4">
+        <div className="space-y-3">
+          <Skeleton className="h-3 w-32" />
+          <Skeleton className="h-12 w-80" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <Skeleton className="h-16 w-20 hidden md:block" />
+      </div>
+      <div className="grid grid-cols-12 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="col-span-12 md:col-span-3">
+            <Skeleton className="h-[120px] rounded-lg" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-[100px] rounded-lg" />
+        ))}
+      </div>
+    </div>
   );
 }

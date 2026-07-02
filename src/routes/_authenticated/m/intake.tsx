@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Camera, Loader2, Check, X, Car, FileText, ScanLine, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -38,6 +38,13 @@ function MobileIntake() {
   const [vehicleMatches, setVehicleMatches] = useState<any[]>([]);
 
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  // Cleanup object URLs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
 
   async function photoToDataUrl(file: File): Promise<string> {
     return new Promise((res, rej) => {
