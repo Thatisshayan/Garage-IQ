@@ -4,9 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Camera, Loader2, Check, X, Car, FileText, ScanLine, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { extractVinFromPhoto, decodeVin, findDuplicateCustomer, findVehicleByVin, submitMobileIntake } from "@/lib/intake.functions";
 import { getUploadUrl } from "@/lib/documents.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { IntakeInput } from "@/lib/schemas";
 
 export const Route = createFileRoute("/_authenticated/m/intake")({
   head: () => ({ meta: [{ title: "Quick Intake" }] }),
@@ -28,22 +31,27 @@ function MobileIntake() {
   const [busy, setBusy] = useState(false);
   const [vin, setVin] = useState("");
   const [plate, setPlate] = useState("");
-  const [vehicle, setVehicle] = useState({ make: "", model: "", year: "" as string | number, color: "", id: "" });
-  const [customer, setCustomer] = useState({ name: "", phone: "", id: "" });
-  const [problem, setProblem] = useState("");
-  const [odometer, setOdometer] = useState<string>("");
+  const [vehicleId, setVehicleId] = useState("");
+  const [customerId, setCustomerId] = useState("");
   const [photoPaths, setPhotoPaths] = useState<string[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
   const [vehicleMatches, setVehicleMatches] = useState<any[]>([]);
 
+  const form = useForm<IntakeInput>({
+    resolver: zodResolver(IntakeInput),
+    defaultValues: {
+      customer: { name: "", phone: "" },
+      vehicle: { make: "", model: "", year: null, color: "" },
+      job: { reported_problem: "", odometer: null },
+      photo_paths: [],
+    },
+  });
+
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  // Cleanup object URLs on unmount to prevent memory leaks
   useEffect(() => {
-    return () => {
-      previewUrls.forEach((url) => URL.revokeObjectURL(url));
-    };
+    return () => { previewUrls.forEach((url) => URL.revokeObjectURL(url)); };
   }, []);
 
   async function photoToDataUrl(file: File): Promise<string> {
@@ -64,16 +72,17 @@ function MobileIntake() {
         const cleaned = String(r.vin).toUpperCase().replace(/[^A-Z0-9]/g, "");
         setVin(cleaned);
         toast.success(`VIN: ${cleaned}`);
-        // Auto-decode
         if (cleaned.length >= 11) {
-          const matches = await vinDupFn({ data: { vin: cleaned } });
-          if (matches.length > 0) {
-            setVehicleMatches(matches);
+          const vmatches = await vinDupFn({ data: { vin: cleaned } });
+          if (vmatches.length > 0) {
+            setVehicleMatches(vmatches);
             toast.info("Existing vehicle found");
           } else {
             const dec = await decodeFn({ data: { vin: cleaned } });
             if (dec.ok) {
-              setVehicle({ id: "", make: dec.make ?? "", model: dec.model ?? "", year: dec.year ?? "", color: "" });
+              form.setValue("vehicle.make", dec.make ?? "");
+              form.setValue("vehicle.model", dec.model ?? "");
+              form.setValue("vehicle.year", dec.year ? Number(dec.year) : null);
               toast.success(`${dec.year ?? ""} ${dec.make ?? ""} ${dec.model ?? ""}`.trim() || "Decoded");
             }
           }
@@ -110,7 +119,7 @@ function MobileIntake() {
       const dataUrl = await photoToDataUrl(file);
       const r = await extractFn({ data: { image_data_url: dataUrl, kind: "odometer" } });
       if (r?.odometer) {
-        setOdometer(String(r.odometer));
+        form.setValue("job.odometer", Number(r.odometer));
         toast.success(`Odometer: ${r.odometer}`);
       } else toast.error("Couldn't read odometer");
     } catch (e: any) {
@@ -136,6 +145,7 @@ function MobileIntake() {
       }
       setPhotoPaths((p) => [...p, ...newPaths]);
       setPreviewUrls((p) => [...p, ...newPreviews]);
+      form.setValue("photo_paths", [...photoPaths, ...newPaths]);
       toast.success(`${files.length} photo(s) uploaded`);
     } catch (e: any) {
       toast.error(e?.message || "Upload failed");
@@ -145,34 +155,20 @@ function MobileIntake() {
   }
 
   async function checkCustomerDup() {
-    if (!customer.name && !customer.phone) return;
-    const m = await dupFn({ data: { name: customer.name, phone: customer.phone } });
+    const { name, phone } = form.getValues("customer");
+    if (!name && !phone) return;
+    const m = await dupFn({ data: { name, phone } });
     setMatches(m);
   }
 
-  async function submit() {
+  async function onSubmit(values: IntakeInput) {
     setBusy(true);
     try {
       const r = await submitFn({
         data: {
-          customer: {
-            id: customer.id || undefined,
-            name: customer.name,
-            phone: customer.phone,
-          },
-          vehicle: {
-            id: vehicle.id || undefined,
-            vin,
-            license_plate: plate,
-            make: vehicle.make,
-            model: vehicle.model,
-            year: vehicle.year ? Number(vehicle.year) : null,
-            color: vehicle.color,
-          },
-          job: {
-            reported_problem: problem,
-            odometer: odometer ? Number(odometer) : null,
-          },
+          ...values,
+          customer: { ...values.customer, id: customerId || undefined },
+          vehicle: { ...values.vehicle, vin, license_plate: plate, id: vehicleId || undefined },
           photo_paths: photoPaths,
         },
       });
@@ -190,7 +186,6 @@ function MobileIntake() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24">
-      {/* Top bar */}
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
@@ -237,9 +232,15 @@ function MobileIntake() {
                   <button
                     key={v.id}
                     onClick={() => {
-                      setVehicle({ id: v.id, make: v.make ?? "", model: v.model ?? "", year: v.year ?? "", color: v.color ?? "" });
+                      setVehicleId(v.id);
+                      setCustomerId(v.customer?.id ?? "");
+                      form.setValue("vehicle.make", v.make ?? "");
+                      form.setValue("vehicle.model", v.model ?? "");
+                      form.setValue("vehicle.year", v.year ?? null);
+                      form.setValue("vehicle.color", v.color ?? "");
+                      form.setValue("customer.name", v.customer?.name ?? "");
+                      form.setValue("customer.phone", v.customer?.phone ?? "");
                       setPlate(v.license_plate ?? "");
-                      setCustomer({ id: v.customer?.id ?? "", name: v.customer?.name ?? "", phone: v.customer?.phone ?? "" });
                       toast.success("Loaded existing vehicle & customer");
                     }}
                     className="block w-full text-left text-sm p-2 hover:bg-primary/10 rounded"
@@ -273,16 +274,31 @@ function MobileIntake() {
         {step === "vehicle" && (
           <Section title="Vehicle details" subtitle={vin ? "We tried to auto-fill from the VIN — confirm or fix." : "Enter what you can."}>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Year" value={String(vehicle.year ?? "")} onChange={(v) => setVehicle({ ...vehicle, year: v })} type="number" />
-              <Field label="Color" value={vehicle.color} onChange={(v) => setVehicle({ ...vehicle, color: v })} />
-              <Field label="Make" value={vehicle.make} onChange={(v) => setVehicle({ ...vehicle, make: v })} />
-              <Field label="Model" value={vehicle.model} onChange={(v) => setVehicle({ ...vehicle, model: v })} />
+              <div>
+                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">Year</label>
+                <input
+                  type="number"
+                  {...form.register("vehicle.year", { valueAsNumber: true })}
+                  className="w-full bg-card border border-border rounded-md px-3 py-3 font-mono text-base"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">Color</label>
+                <input {...form.register("vehicle.color")} className="w-full bg-card border border-border rounded-md px-3 py-3 text-base" />
+              </div>
+              <div>
+                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">Make</label>
+                <input {...form.register("vehicle.make")} className="w-full bg-card border border-border rounded-md px-3 py-3 text-base" />
+              </div>
+              <div>
+                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">Model</label>
+                <input {...form.register("vehicle.model")} className="w-full bg-card border border-border rounded-md px-3 py-3 text-base" />
+              </div>
             </div>
             <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mt-4 mb-1">Odometer (optional)</label>
             <div className="flex gap-2">
               <input
-                value={odometer}
-                onChange={(e) => setOdometer(e.target.value)}
+                {...form.register("job.odometer", { valueAsNumber: true })}
                 inputMode="numeric"
                 placeholder="km"
                 className="flex-1 bg-card border border-border rounded-md px-3 py-3 font-mono"
@@ -308,16 +324,38 @@ function MobileIntake() {
 
         {step === "customer" && (
           <Section title="Customer" subtitle="Name + phone. We'll check for duplicates.">
-            <Field label="Full name" value={customer.name} onChange={(v) => setCustomer({ ...customer, name: v, id: "" })} onBlur={checkCustomerDup} />
-            <Field label="Phone" value={customer.phone} onChange={(v) => setCustomer({ ...customer, phone: v, id: "" })} onBlur={checkCustomerDup} type="tel" />
-            {matches.length > 0 && !customer.id && (
+            <div>
+              <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">Full name *</label>
+              <input
+                {...form.register("customer.name")}
+                onBlur={checkCustomerDup}
+                className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
+              />
+              {form.formState.errors.customer?.name && (
+                <p className="text-[0.8rem] font-medium text-destructive mt-1">
+                  {form.formState.errors.customer.name.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">Phone</label>
+              <input
+                type="tel"
+                {...form.register("customer.phone")}
+                onBlur={checkCustomerDup}
+                className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
+              />
+            </div>
+            {matches.length > 0 && !customerId && (
               <div className="mt-3 p-3 rounded-md border border-amber-400/40 bg-amber-400/5">
-                <div className="text-[10px] tick uppercase text-amber-400 mb-2">⚠ Possible match — reuse?</div>
+                <div className="text-[10px] tick uppercase text-amber-400 mb-2">Possible match — reuse?</div>
                 {matches.map((m) => (
                   <button
                     key={m.id}
                     onClick={() => {
-                      setCustomer({ id: m.id, name: m.name, phone: m.phone ?? "" });
+                      setCustomerId(m.id);
+                      form.setValue("customer.name", m.name);
+                      form.setValue("customer.phone", m.phone ?? "");
                       setMatches([]);
                       toast.success("Reusing existing customer");
                     }}
@@ -332,8 +370,7 @@ function MobileIntake() {
               What's the problem?
             </label>
             <textarea
-              value={problem}
-              onChange={(e) => setProblem(e.target.value)}
+              {...form.register("job.reported_problem")}
               rows={3}
               placeholder="e.g. front bumper damage from parking-lot hit"
               className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
@@ -373,19 +410,18 @@ function MobileIntake() {
 
         {step === "review" && (
           <Section title="Review" subtitle="Double-check before saving.">
-            <ReviewRow icon={<Car />} label="Vehicle" value={`${vehicle.year || ""} ${vehicle.make} ${vehicle.model}`.trim() || "—"} />
+            <ReviewRow icon={<Car />} label="Vehicle" value={`${form.getValues("vehicle.year") || ""} ${form.getValues("vehicle.make")} ${form.getValues("vehicle.model")}`.trim() || "—"} />
             <ReviewRow label="VIN" value={vin || "—"} mono />
             <ReviewRow label="Plate" value={plate || "—"} mono />
-            <ReviewRow label="Odometer" value={odometer ? `${odometer} km` : "—"} />
-            <ReviewRow icon={<FileText />} label="Customer" value={customer.name || "—"} />
-            <ReviewRow label="Phone" value={customer.phone || "—"} />
-            <ReviewRow label="Problem" value={problem || "—"} />
+            <ReviewRow label="Odometer" value={form.getValues("job.odometer") ? `${form.getValues("job.odometer")} km` : "—"} />
+            <ReviewRow icon={<FileText />} label="Customer" value={form.getValues("customer.name") || "—"} />
+            <ReviewRow label="Phone" value={form.getValues("customer.phone") || "—"} />
+            <ReviewRow label="Problem" value={form.getValues("job.reported_problem") || "—"} />
             <ReviewRow label="Photos" value={`${photoPaths.length} attached`} />
           </Section>
         )}
       </main>
 
-      {/* Sticky bottom nav */}
       <nav className="fixed bottom-0 inset-x-0 bg-background/95 backdrop-blur border-t border-border p-3 flex gap-2 max-w-md mx-auto md:left-1/2 md:-translate-x-1/2">
         {stepIdx > 0 && (
           <button
@@ -398,15 +434,15 @@ function MobileIntake() {
         {step !== "review" ? (
           <button
             onClick={() => setStep(STEP_ORDER[stepIdx + 1])}
-            disabled={busy || (step === "customer" && !customer.name)}
+            disabled={busy || (step === "customer" && !form.getValues("customer.name"))}
             className="flex-1 px-4 py-3 rounded-md bg-primary text-primary-foreground font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
           >
             Next <ArrowRight className="w-4 h-4" />
           </button>
         ) : (
           <button
-            onClick={submit}
-            disabled={busy || !customer.name}
+            onClick={form.handleSubmit(onSubmit)}
+            disabled={busy || !form.getValues("customer.name")}
             className="flex-1 px-4 py-3 rounded-md bg-primary text-primary-foreground font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Save & start job
@@ -457,33 +493,6 @@ function PhotoButton({ icon, label, busy, onFile, done }: any) {
         onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
       />
     </>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  type = "text",
-  onBlur,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-  onBlur?: () => void;
-}) {
-  return (
-    <div>
-      <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={onBlur}
-        className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
-      />
-    </div>
   );
 }
 

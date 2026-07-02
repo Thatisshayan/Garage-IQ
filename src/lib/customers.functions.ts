@@ -1,13 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-
-const CustomerInput = z.object({
-  name: z.string().min(1).max(200),
-  email: z.string().email().max(255).optional().or(z.literal("")),
-  phone: z.string().max(50).optional().or(z.literal("")),
-  address: z.string().max(500).optional().or(z.literal("")),
-});
+import { CustomerInput } from "./schemas";
 
 export const listCustomers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

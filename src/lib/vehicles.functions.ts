@@ -1,16 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-
-const VehicleInput = z.object({
-  customer_id: z.string().uuid(),
-  make: z.string().max(100).optional().or(z.literal("")),
-  model: z.string().max(100).optional().or(z.literal("")),
-  year: z.coerce.number().int().min(1900).max(2100).optional().nullable(),
-  vin: z.string().max(50).optional().or(z.literal("")),
-  license_plate: z.string().max(20).optional().or(z.literal("")),
-  color: z.string().max(50).optional().or(z.literal("")),
-});
+import { VehicleInput } from "./schemas";
 
 export const listVehicles = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

@@ -199,3 +199,76 @@ Verified directly against the codebase (grep, file reads, live `bun run build`) 
 - Sprint 0.1 was verified against the live codebase, not taken on faith — the three real gaps (untested money paths, `z.any()` extraction hole, dangling `supabaseAdmin`) are the actual priority order for this sprint, ahead of the UX items.
 - Don't re-do anything in the "Confirmed DONE" list above — it was checked directly (grep + file reads + a clean `bun run build`), not inferred from commit messages.
 - Same rule as Sprint 0.1: anything marked as a product decision (RLS model, CSRF posture, search consolidation direction) gets surfaced to Shayan, not decided unilaterally.
+
+---
+---
+
+## VERIFICATION — Sprint 0.2 claimed-complete audit (2026-07-02)
+
+Verified directly: `git log` (3 real commits matching the claim), `bun run test` (69/69 pass), `bun run build` (clean, 3 build targets), file reads on `SECURITY-DECISIONS.md`, grep for `z.any()` and `supabaseAdmin`.
+
+### Confirmed DONE — all of it checks out
+- ✅ Vitest wired, `src/lib/state-machine.test.ts` + `src/lib/extract-schemas.test.ts`, 69/69 passing.
+- ✅ `extracted_data` now `z.discriminatedUnion("type", [...])` in `documents.functions.ts` — AR-5 genuinely closed. The one remaining `z.any()` in the codebase is `assistant.functions.ts:29` (`value: z.any()` on an NL→SQL filter value) — legitimate, matches opencode's own characterization, not a money/extraction path.
+- ✅ `supabaseAdmin` fully deleted — zero matches anywhere in `src/`.
+- ✅ `SECURITY-DECISIONS.md` exists with a real CSRF rationale (not a rubber stamp — it correctly explains why Bearer-only + no cookies removes the CSRF attack surface) and the RLS question properly written up as three concrete options, explicitly awaiting your decision rather than opencode picking one.
+- ✅ `/reset-password` and `/update-password` routes exist.
+- ✅ Dead code actually gone (`sidebar.tsx`, `form.tsx` no longer present anywhere in `src/`).
+- ✅ Clean `bun run build` and `bun run test` right now, on the current `main`, not just at commit time.
+
+No gaps found this round — Sprint 0.2 is legitimately complete as reported.
+
+---
+
+## Garage IQ — Sprint 0.3 (continues Sprint 0.2)
+
+**Goal:** Finish the remaining Phase 8 UX debt (client-side validation), get CI actually running the new test suite so it can't silently rot, standardize error handling and tighten `any` typing on the money path, and do the final pre-launch documentation/config pass — so the *only* things left before shipping are your own product decisions (RLS scoping, search consolidation) and the manual dashboard actions (key rotation confirmation, SMTP for password-reset email delivery).
+
+**By the end of this sprint, what will be true:**
+1. Forms give real-time inline validation instead of failing silently on submit — the Zod schemas that already exist server-side are enforced client-side too.
+2. Every push/PR runs `bun run test` and `bun run build` in CI — the 69 tests from Sprint 0.2 can't be silently broken by a future change without someone noticing.
+3. `invoices.functions.ts`, `payments.functions.ts`, and `claims.functions.ts` have real types instead of `any` on their data payloads — a typo in a field name fails at compile time, not in production.
+4. One error-handling pattern (documented in `AGENTS.md`) is applied consistently across `*.functions.ts` — no more guessing whether a given server function throws or returns `{ error }`.
+5. `README.md` and `AGENTS.md` accurately describe the current (post-Lovable, post-Sprint-0.2) stack — a new dev or a fresh opencode session can onboard from docs alone without hitting stale Lovable references or wrong setup steps.
+6. Wrangler/Cloudflare Workers deployment config is confirmed production-ready — no dev-only flags left in `vite.config.ts` or the wrangler settings.
+7. The password-reset flow (Sprint 0.2) is confirmed to actually deliver email, not just compile — this needs you to check Supabase's SMTP config (see below), opencode can verify the code path but not the dashboard.
+
+**Source of truth:** `AUDIT-REPORT.md` + both verification sections above, which supersede opencode's own sprint notes wherever they conflict.
+
+---
+
+### Phase 11 — Client-Side Form Validation (AR §8, High Priority — still open)
+
+- [ ] Wire the existing server-side Zod schemas into React Hook Form for the three forms the audit called out as highest-traffic: mobile intake (`m/intake.tsx`), job creation, customer creation/edit.
+- [ ] Inline field-level error messages, not just a toast on submit failure.
+- [ ] Confirm this doesn't duplicate schema definitions — reuse the same Zod schema client + server where the module boundary allows it (server-only fields excluded).
+
+### Phase 12 — CI Wiring
+
+- [ ] Add a GitHub Actions workflow (`.github/workflows/ci.yml`) that runs on push/PR: `bun install`, `bun run test`, `bun run build`, `bun run lint`.
+- [ ] Confirm it actually fails red on a broken test (sanity check — introduce and revert a deliberate failure, or check workflow logic carefully) before calling this done.
+
+### Phase 13 — Money-Path Typing + Error Handling Standardization
+
+- [ ] Define proper TypeScript interfaces/types for `invoices.functions.ts`, `payments.functions.ts`, `claims.functions.ts` data shapes — replace `any` props. Use the existing Supabase generated `Database` types as the base where possible instead of hand-rolling new ones.
+- [ ] Pick one error-handling convention (throw vs. `{ error }` return) and document the decision + rationale in `AGENTS.md`. Apply it going forward; retrofitting every existing function is not required this sprint, but flag which files still use the old pattern so it's trackable.
+
+### Phase 14 — Documentation + Deployment Config Pass
+
+- [ ] Update `README.md` and `AGENTS.md`: remove any dangling Lovable references, confirm setup instructions match the current `.env.example`, document the test command (`bun run test`) and the new `SECURITY-DECISIONS.md` file's existence.
+- [ ] Review `vite.config.ts` and wrangler config for dev-only flags (source maps exposed in prod, debug logging, permissive CORS, etc.) that shouldn't ship.
+- [ ] Confirm all env vars actually read in code (`grep -rn "process.env\|import.meta.env" src/`) are documented in `.env.example` — catch drift since Sprint 0.1's original pass.
+
+### Phase 15 — Final Pre-Launch Checklist
+
+- [ ] `bun run build && bun run lint && bun run test` — all clean, on `main`, right before considering this launch-ready.
+- [ ] Manual end-to-end smoke test: intake → document upload → AI processing → claim/invoice creation → payment → job completion — with the new client-side validation and typed money path in place, re-run this one more time since Phase 11/13 touch it directly.
+- [ ] Confirm outstanding product decisions are actually resolved, not just documented as open: RLS row isolation (`SECURITY-DECISIONS.md`), search consolidation (GlobalLookup vs `/search`).
+
+---
+
+### Notes for opencode (Sprint 0.3)
+
+- Sprint 0.2 was fully verified this time — no gaps found, so nothing here duplicates prior work. Trust the "Confirmed DONE" sections above rather than re-checking them yourself.
+- Phase 11 and 13 are the substantive engineering work; Phase 12 and 14 are cheap but easy to skip — don't skip them, a test suite nobody runs in CI silently rots.
+- If Shayan hasn't answered the RLS/search-consolidation questions by the time you reach Phase 15, ship without them and note it explicitly rather than blocking the sprint — those were already correctly flagged as product decisions in Sprint 0.2, not engineering blockers.

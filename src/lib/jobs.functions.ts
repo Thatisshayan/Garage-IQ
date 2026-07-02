@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { JobInput } from "./schemas";
 
 const JOB_STATUSES = [
   "pending",
@@ -10,12 +11,6 @@ const JOB_STATUSES = [
   "awaiting_payment",
   "completed",
 ] as const;
-
-const JobInput = z.object({
-  customer_id: z.string().uuid(),
-  vehicle_id: z.string().uuid(),
-  description: z.string().max(2000).optional().or(z.literal("")),
-});
 
 export const listJobs = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

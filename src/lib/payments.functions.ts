@@ -1,17 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-
-const PaymentInput = z.object({
-  job_id: z.string().uuid(),
-  payer_type: z.enum(["insurance", "client", "other"]),
-  payer_name: z.string().max(200).optional().or(z.literal("")),
-  amount: z.coerce.number().nonnegative().max(10_000_000),
-  currency: z.string().max(8).default("CAD"),
-  method: z.string().max(60).optional().or(z.literal("")),
-  note: z.string().max(500).optional().or(z.literal("")),
-  paid_at: z.string().optional(),
-});
+import { PaymentInput } from "./schemas";
 
 export const listJobPayments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

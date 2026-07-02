@@ -2,10 +2,13 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { listCustomers, createCustomer } from "@/lib/customers.functions";
+import { CustomerInput } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/customers/")({
@@ -18,15 +21,18 @@ function Customers() {
   const create = useServerFn(createCustomer);
   const { data, refetch } = useSuspenseQuery({ queryKey: ["customers"], queryFn: () => fn() });
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", address: "" });
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  const form = useForm<CustomerInput>({
+    resolver: zodResolver(CustomerInput),
+    defaultValues: { name: "", email: "", phone: "", address: "" },
+  });
+
+  async function submit(values: CustomerInput) {
     try {
-      await create({ data: form });
+      await create({ data: values });
       toast.success("Customer created");
       setShowForm(false);
-      setForm({ name: "", email: "", phone: "", address: "" });
+      form.reset();
       refetch();
     } catch (err: any) { toast.error(err.message); }
   }
@@ -38,13 +44,41 @@ function Customers() {
         <Button size="sm" onClick={() => setShowForm(!showForm)}>+ New customer</Button>
       </div>
       {showForm && (
-        <form onSubmit={submit} className="border border-border rounded-md p-4 bg-card grid grid-cols-2 gap-3 max-w-2xl">
-          <div className="col-span-2"><Label>Name *</Label><Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-          <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-          <div className="col-span-2"><Label>Address</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
-          <div className="col-span-2 flex gap-2"><Button type="submit" size="sm">Save</Button></div>
-        </form>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(submit)} className="border border-border rounded-md p-4 bg-card grid grid-cols-2 gap-3 max-w-2xl">
+            <FormField control={form.control} name="name" render={({ field }) => (
+              <FormItem className="col-span-2">
+                <FormLabel>Name *</FormLabel>
+                <FormControl><Input {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="email" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl><Input type="email" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="phone" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone</FormLabel>
+                <FormControl><Input {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="address" render={({ field }) => (
+              <FormItem className="col-span-2">
+                <FormLabel>Address</FormLabel>
+                <FormControl><Input {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <div className="col-span-2 flex gap-2">
+              <Button type="submit" size="sm" disabled={form.formState.isSubmitting}>Save</Button>
+            </div>
+          </form>
+        </Form>
       )}
       <table className="w-full text-sm border border-border rounded-md overflow-hidden">
         <thead className="bg-card"><tr className="text-left"><th className="p-3">Name</th><th className="p-3">Email</th><th className="p-3">Phone</th></tr></thead>

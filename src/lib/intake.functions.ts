@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { generateText } from "ai";
 import { getAiGateway } from "./ai-gateway.server";
+import { IntakeInput } from "./schemas";
 import { sanitizeLike, isRateLimited } from "./utils";
 
 // Use AI vision to extract a VIN and/or license plate from a photo.
@@ -112,28 +113,6 @@ export const findVehicleByVin = createServerFn({ method: "POST" })
   });
 
 // One-shot mobile intake: creates (or reuses) customer + vehicle + job and links uploaded photos.
-const IntakeInput = z.object({
-  customer: z.object({
-    id: z.string().uuid().optional(),
-    name: z.string().min(1).max(200),
-    phone: z.string().max(50).optional().or(z.literal("")),
-  }),
-  vehicle: z.object({
-    id: z.string().uuid().optional(),
-    vin: z.string().max(17).optional().or(z.literal("")),
-    license_plate: z.string().max(20).optional().or(z.literal("")),
-    make: z.string().max(100).optional().or(z.literal("")),
-    model: z.string().max(100).optional().or(z.literal("")),
-    year: z.coerce.number().int().min(1900).max(2100).optional().nullable(),
-    color: z.string().max(50).optional().or(z.literal("")),
-  }),
-  job: z.object({
-    reported_problem: z.string().max(2000).optional().or(z.literal("")),
-    odometer: z.coerce.number().int().nonnegative().optional().nullable(),
-  }),
-  photo_paths: z.array(z.string().min(1)).max(20).default([]),
-});
-
 export const submitMobileIntake = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => IntakeInput.parse(d))
