@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -139,6 +139,11 @@ function AuthPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="pw" className="text-[10px] tick uppercase tracking-[0.18em] text-muted-foreground">Password</Label>
                 <Input id="pw" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="bg-background/40" />
+                {mode === "signin" && (
+                  <Link to="/reset-password" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
+                    Forgot password?
+                  </Link>
+                )}
               </div>
               <Button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 ember-glow">
                 {loading ? "…" : mode === "signin" ? "Sign in →" : "Create account →"}
