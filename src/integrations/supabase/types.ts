@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      claim_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          field_map: Json
+          id: string
+          insurer: string | null
+          name: string
+          notes: string | null
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          field_map?: Json
+          id?: string
+          insurer?: string | null
+          name: string
+          notes?: string | null
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          field_map?: Json
+          id?: string
+          insurer?: string | null
+          name?: string
+          notes?: string | null
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null

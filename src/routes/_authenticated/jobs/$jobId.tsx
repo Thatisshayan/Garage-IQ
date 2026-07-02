@@ -96,6 +96,9 @@ function JobDetail() {
               <Phone className="w-3.5 h-3.5" /> Call {job.customer.name?.split(" ")[0]}
             </a>
           )}
+          <Link to="/claims/fill/$jobId" params={{ jobId }} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-border text-sm hover:bg-accent">
+            <Download className="w-3.5 h-3.5" /> Fill claim form
+          </Link>
           <Button variant="outline" size="sm" onClick={downloadPdf} disabled={!ledger}>
             <Download className="w-3.5 h-3.5 mr-1.5" /> Invoice PDF
           </Button>

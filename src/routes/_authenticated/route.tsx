@@ -1,9 +1,10 @@
 import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
+import { GlobalLookup } from "@/components/global-lookup";
 import {
   LayoutDashboard, Briefcase, Users, Car, FileText, ShieldCheck,
-  Receipt, Search, Bot, Inbox, LogOut, Wrench, Sunrise, Smartphone,
+  Receipt, Search, Bot, Inbox, LogOut, Wrench, Sunrise, Smartphone, FileCheck2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -26,6 +27,7 @@ const NAV = [
   { to: "/customers", label: "Customers", icon: Users, group: "Records" },
   { to: "/vehicles", label: "Vehicles", icon: Car, group: "Records" },
   { to: "/claims", label: "Claims", icon: ShieldCheck, group: "Finance" },
+  { to: "/claims/templates", label: "Claim templates", icon: FileCheck2, group: "Finance" },
   { to: "/invoices", label: "Invoices", icon: Receipt, group: "Finance" },
   { to: "/search", label: "Global search", icon: Search, group: "Intel" },
   { to: "/assistant", label: "AI assistant", icon: Bot, group: "Intel" },
@@ -117,6 +119,9 @@ function AuthedLayout() {
       <main className="flex-1 overflow-auto relative">
         <div className="absolute inset-0 grid-bg opacity-[0.35] pointer-events-none" />
         <div className="absolute -top-32 -right-32 w-[480px] h-[480px] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
+        <div className="relative sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur px-6 py-3 flex items-center gap-4">
+          <GlobalLookup />
+        </div>
         <div className="relative">
           <AnimatePresence mode="wait">
             <motion.div
