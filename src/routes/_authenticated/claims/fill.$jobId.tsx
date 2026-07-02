@@ -76,7 +76,7 @@ function FillPage() {
         } catch { /* field missing / unsupported */ }
       }
       const out = await pdf.save();
-      const blob = new Blob([out], { type: "application/pdf" });
+      const blob = new Blob([out as BlobPart], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

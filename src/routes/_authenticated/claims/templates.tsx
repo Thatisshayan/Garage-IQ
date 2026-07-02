@@ -151,7 +151,7 @@ function FieldMapEditor({ id, onClose }: { id: string; onClose: () => void }) {
       try {
         const t = await getFn({ data: { id } });
         setTpl(t);
-        setMap(t.field_map ?? {});
+        setMap((t.field_map ?? {}) as Record<string, string>);
         if (t.signed_url) {
           const bytes = await fetch(t.signed_url).then(r => r.arrayBuffer());
           const pdf = await PDFDocument.load(bytes);
