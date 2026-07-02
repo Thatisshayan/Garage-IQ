@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -58,11 +58,18 @@ function Vehicles() {
         <thead className="bg-card"><tr className="text-left"><th className="p-3">Vehicle</th><th className="p-3">VIN</th><th className="p-3">Plate</th><th className="p-3">Customer</th></tr></thead>
         <tbody>
           {data.map((v: any) => (
-            <tr key={v.id} className="border-t border-border">
-              <td className="p-3">{v.year} {v.make} {v.model}</td>
+            <tr key={v.id} className="border-t border-border hover:bg-accent/40 transition-colors">
+              <td className="p-3">
+                <Link to="/vehicles/$vehicleId" params={{ vehicleId: v.id }} className="hover:text-primary">
+                  {v.year} {v.make} {v.model}
+                </Link>
+              </td>
               <td className="p-3 font-mono text-xs">{v.vin}</td>
               <td className="p-3 font-mono text-xs">{v.license_plate}</td>
               <td className="p-3">{v.customer?.name}</td>
+              <td className="p-3 text-right">
+                <Link to="/vehicles/$vehicleId" params={{ vehicleId: v.id }} className="text-xs text-primary hover:underline">History →</Link>
+              </td>
             </tr>
           ))}
         </tbody>
