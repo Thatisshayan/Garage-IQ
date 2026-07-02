@@ -109,10 +109,7 @@ describe("nextStatusFor — exhaustiveness", () => {
     ["completed", "invoice_paid", null],
   ];
 
-  it.each(transitions)(
-    "nextStatusFor(%s, %s) → %s",
-    (status, event, expected) => {
-      expect(nextStatusFor(status, event)).toBe(expected);
-    },
-  );
+  it.each(transitions)("nextStatusFor(%s, %s) → %s", (status, event, expected) => {
+    expect(nextStatusFor(status, event)).toBe(expected);
+  });
 });

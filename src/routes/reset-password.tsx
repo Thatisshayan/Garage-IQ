@@ -79,17 +79,36 @@ function ResetPasswordPage() {
           ) : (
             <form onSubmit={submit} className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-[10px] tick uppercase tracking-[0.18em] text-muted-foreground">Email</Label>
-                <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="bg-background/40" />
+                <Label
+                  htmlFor="email"
+                  className="text-[10px] tick uppercase tracking-[0.18em] text-muted-foreground"
+                >
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-background/40"
+                />
               </div>
-              <Button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 ember-glow">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 ember-glow"
+              >
                 {loading ? "…" : "Send reset link →"}
               </Button>
             </form>
           )}
         </div>
 
-        <Link to="/auth" className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors">
+        <Link
+          to="/auth"
+          className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+        >
           <ArrowLeft className="w-3 h-3" /> Back to sign in
         </Link>
       </motion.div>

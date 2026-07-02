@@ -75,9 +75,7 @@ function ArchivePage() {
                 <td className="p-3 text-xs text-muted-foreground">
                   {d.archived_at ? new Date(d.archived_at).toLocaleDateString() : "—"}
                 </td>
-                <td className="p-3 text-xs text-muted-foreground">
-                  {d.job?.description ?? "—"}
-                </td>
+                <td className="p-3 text-xs text-muted-foreground">{d.job?.description ?? "—"}</td>
                 <td className="p-3 text-right">
                   <button
                     onClick={async () => {

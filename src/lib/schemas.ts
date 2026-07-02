@@ -13,7 +13,13 @@ export const VehicleInput = z.object({
   customer_id: z.string().uuid("Select a customer"),
   make: z.string().max(100).optional().or(z.literal("")),
   model: z.string().max(100).optional().or(z.literal("")),
-  year: z.coerce.number().int().min(1900, "Invalid year").max(2100, "Invalid year").optional().nullable(),
+  year: z.coerce
+    .number()
+    .int()
+    .min(1900, "Invalid year")
+    .max(2100, "Invalid year")
+    .optional()
+    .nullable(),
   vin: z.string().max(50).optional().or(z.literal("")),
   license_plate: z.string().max(20).optional().or(z.literal("")),
   color: z.string().max(50).optional().or(z.literal("")),
@@ -54,7 +60,13 @@ export const IntakeInput = z.object({
     license_plate: z.string().max(20).optional().or(z.literal("")),
     make: z.string().max(100).optional().or(z.literal("")),
     model: z.string().max(100).optional().or(z.literal("")),
-    year: z.coerce.number().int().min(1900, "Invalid year").max(2100, "Invalid year").optional().nullable(),
+    year: z.coerce
+      .number()
+      .int()
+      .min(1900, "Invalid year")
+      .max(2100, "Invalid year")
+      .optional()
+      .nullable(),
     color: z.string().max(50).optional().or(z.literal("")),
   }),
   job: z.object({

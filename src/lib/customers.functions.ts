@@ -15,7 +15,11 @@ export const listCustomers = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }) => {
     const offset = (data.page - 1) * data.limit;
-    const { data: rows, error, count } = await context.supabase
+    const {
+      data: rows,
+      error,
+      count,
+    } = await context.supabase
       .from("customers")
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
@@ -65,9 +69,7 @@ export const createCustomer = createServerFn({ method: "POST" })
 
 export const updateCustomer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    CustomerInput.extend({ id: z.string().uuid() }).parse(d),
-  )
+  .inputValidator((d: unknown) => CustomerInput.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { id, ...rest } = data;
     const { error } = await context.supabase

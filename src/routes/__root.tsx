@@ -38,7 +38,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
-      reportError(error, { boundary: "tanstack_root_error_component" });
+    reportError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
   return (
@@ -78,11 +78,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Garage IQ" },
-      { name: "description", content: "AI-powered garage management for car repair and insurance workflows." },
+      {
+        name: "description",
+        content: "AI-powered garage management for car repair and insurance workflows.",
+      },
       { property: "og:title", content: "Garage IQ" },
       { name: "twitter:title", content: "Garage IQ" },
-      { property: "og:description", content: "AI-powered garage management for car repair and insurance workflows." },
-      { name: "twitter:description", content: "AI-powered garage management for car repair and insurance workflows." },
+      {
+        property: "og:description",
+        content: "AI-powered garage management for car repair and insurance workflows.",
+      },
+      {
+        name: "twitter:description",
+        content: "AI-powered garage management for car repair and insurance workflows.",
+      },
       { property: "og:image", content: "/og.png" },
       { name: "twitter:image", content: "/og.png" },
       { name: "twitter:card", content: "summary_large_image" },

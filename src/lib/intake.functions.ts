@@ -59,9 +59,7 @@ export const extractVinFromPhoto = createServerFn({ method: "POST" })
 // Free NHTSA VIN decoder - no API key, no auth needed (public).
 export const decodeVin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ vin: z.string().min(11).max(17) }).parse(d),
-  )
+  .inputValidator((d: unknown) => z.object({ vin: z.string().min(11).max(17) }).parse(d))
   .handler(async ({ data }) => {
     const res = await fetch(
       `https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/${encodeURIComponent(data.vin)}?format=json`,

@@ -26,9 +26,7 @@ function toCsv(rows: any[]): string {
 export const exportEntity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z
-      .object({ entity: z.enum(EXPORTABLE), format: z.enum(["csv", "json"]) })
-      .parse(d),
+    z.object({ entity: z.enum(EXPORTABLE), format: z.enum(["csv", "json"]) }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const MAX_ROWS = 10000;
@@ -41,6 +39,10 @@ export const exportEntity = createServerFn({ method: "POST" })
       console.warn(`[Export] ${data.entity} hit row cap of ${MAX_ROWS} — results truncated`);
     }
     if (data.format === "json")
-      return { filename: `${data.entity}.json`, content: JSON.stringify(rows, null, 2), mime: "application/json" };
+      return {
+        filename: `${data.entity}.json`,
+        content: JSON.stringify(rows, null, 2),
+        mime: "application/json",
+      };
     return { filename: `${data.entity}.csv`, content: toCsv(rows ?? []), mime: "text/csv" };
   });

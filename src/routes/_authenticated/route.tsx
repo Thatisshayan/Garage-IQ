@@ -1,12 +1,34 @@
-import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  Link,
+  useNavigate,
+  useRouter,
+  useRouterState,
+} from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlobalLookup } from "@/components/global-lookup";
 import { useState, useEffect } from "react";
 import {
-  LayoutDashboard, Briefcase, Users, Car, FileText, ShieldCheck,
-  Receipt, Search, Bot, Inbox, LogOut, Wrench, Sunrise, Smartphone, FileCheck2,
-  Menu, X,
+  LayoutDashboard,
+  Briefcase,
+  Users,
+  Car,
+  FileText,
+  ShieldCheck,
+  Receipt,
+  Search,
+  Bot,
+  Inbox,
+  LogOut,
+  Wrench,
+  Sunrise,
+  Smartphone,
+  FileCheck2,
+  Menu,
+  X,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -47,7 +69,9 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
           </div>
           <div>
             <div className="font-display text-[15px] font-semibold leading-none">Garage IQ</div>
-            <div className="text-[10px] tick text-muted-foreground tracking-[0.18em] mt-1">GARAGE / v1.0</div>
+            <div className="text-[10px] tick text-muted-foreground tracking-[0.18em] mt-1">
+              GARAGE / v1.0
+            </div>
           </div>
         </div>
         <div className="mt-4 flex items-center gap-2 text-[10px] tick uppercase tracking-[0.16em] text-muted-foreground">
@@ -59,16 +83,22 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
       <nav className="relative flex-1 py-3 overflow-y-auto">
         {groups.map((g) => (
           <div key={g} className="mb-4">
-            <div className="px-5 mb-1.5 text-[10px] tick uppercase tracking-[0.22em] text-muted-foreground/70">{g}</div>
+            <div className="px-5 mb-1.5 text-[10px] tick uppercase tracking-[0.22em] text-muted-foreground/70">
+              {g}
+            </div>
             <div className="space-y-0.5 px-2">
               {NAV.filter((n) => n.group === g).map((n) => {
                 const Icon = n.icon;
                 const active = n.to === "/" ? pathname === "/" : pathname.startsWith(n.to);
                 return (
                   <Link key={n.to} to={n.to} onClick={onNavigate} className="block group">
-                    <div className={`relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                      active ? "text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60"
-                    }`}>
+                    <div
+                      className={`relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                        active
+                          ? "text-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60"
+                      }`}
+                    >
                       {active && (
                         <motion.div
                           layoutId="nav-active"
@@ -83,7 +113,10 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
                           transition={{ type: "spring", stiffness: 380, damping: 32 }}
                         />
                       )}
-                      <Icon className={`relative w-4 h-4 ${active ? "text-primary" : ""}`} strokeWidth={active ? 2.4 : 1.8} />
+                      <Icon
+                        className={`relative w-4 h-4 ${active ? "text-primary" : ""}`}
+                        strokeWidth={active ? 2.4 : 1.8}
+                      />
                       <span className="relative">{n.label}</span>
                     </div>
                   </Link>
@@ -95,7 +128,9 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
       </nav>
 
       <div className="relative m-3 p-3 rounded-md border border-sidebar-border bg-sidebar-accent/40">
-        <div className="text-[10px] tick uppercase tracking-[0.2em] text-muted-foreground">Session</div>
+        <div className="text-[10px] tick uppercase tracking-[0.2em] text-muted-foreground">
+          Session
+        </div>
         <button
           onClick={async () => {
             await supabase.auth.signOut();
@@ -137,7 +172,10 @@ function AuthedLayout() {
           <aside className="absolute inset-y-0 left-0 w-[280px] bg-sidebar flex flex-col relative shadow-xl">
             <div className="absolute inset-0 dot-bg opacity-40 pointer-events-none" />
             <div className="absolute top-4 right-4 z-10">
-              <button onClick={() => setMobileOpen(false)} className="p-1 rounded-md hover:bg-sidebar-accent">
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="p-1 rounded-md hover:bg-sidebar-accent"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>

@@ -2,7 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Phone, Car, AlertTriangle, Wrench, ShieldCheck, Package, Banknote, Hourglass } from "lucide-react";
+import {
+  Phone,
+  Car,
+  AlertTriangle,
+  Wrench,
+  ShieldCheck,
+  Package,
+  Banknote,
+  Hourglass,
+} from "lucide-react";
 import { todayBoard } from "@/lib/today.functions";
 
 export const Route = createFileRoute("/_authenticated/today/")({
@@ -11,27 +20,55 @@ export const Route = createFileRoute("/_authenticated/today/")({
 });
 
 const BLOCKER_META: Record<string, { label: string; tag: string; icon: any; tone: string }> = {
-  awaiting_insurance: { label: "Waiting on insurance", tag: "BLOCKED", icon: ShieldCheck, tone: "text-blue-400" },
-  parts_ordered: { label: "Waiting on parts", tag: "INCOMING", icon: Package, tone: "text-amber-400" },
+  awaiting_insurance: {
+    label: "Waiting on insurance",
+    tag: "BLOCKED",
+    icon: ShieldCheck,
+    tone: "text-blue-400",
+  },
+  parts_ordered: {
+    label: "Waiting on parts",
+    tag: "INCOMING",
+    icon: Package,
+    tone: "text-amber-400",
+  },
   in_progress: { label: "On the lift", tag: "ACTIVE", icon: Wrench, tone: "text-primary" },
-  awaiting_payment: { label: "Ready — needs payment", tag: "PICKUP", icon: Banknote, tone: "text-green-400" },
+  awaiting_payment: {
+    label: "Ready — needs payment",
+    tag: "PICKUP",
+    icon: Banknote,
+    tone: "text-green-400",
+  },
   pending: { label: "Just arrived", tag: "NEW", icon: Hourglass, tone: "text-muted-foreground" },
 };
 
-const ORDER = ["awaiting_payment", "in_progress", "parts_ordered", "awaiting_insurance", "pending"] as const;
+const ORDER = [
+  "awaiting_payment",
+  "in_progress",
+  "parts_ordered",
+  "awaiting_insurance",
+  "pending",
+] as const;
 
 function TodayBoard() {
   const fn = useServerFn(todayBoard);
-  const { data } = useSuspenseQuery({ queryKey: ["today"], queryFn: () => fn(), refetchInterval: 60_000 });
+  const { data } = useSuspenseQuery({
+    queryKey: ["today"],
+    queryFn: () => fn(),
+    refetchInterval: 60_000,
+  });
 
   return (
     <div className="p-6 md:p-8 space-y-6">
       <header className="flex items-end justify-between flex-wrap gap-4">
         <div>
-          <div className="text-[10px] tick uppercase tracking-[0.22em] text-muted-foreground">Floor View</div>
+          <div className="text-[10px] tick uppercase tracking-[0.22em] text-muted-foreground">
+            Floor View
+          </div>
           <h1 className="font-display text-3xl md:text-4xl font-semibold">Today</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {data.counts.active} active {data.counts.active === 1 ? "job" : "jobs"} · {data.counts.flagged} flagged
+            {data.counts.active} active {data.counts.active === 1 ? "job" : "jobs"} ·{" "}
+            {data.counts.flagged} flagged
           </p>
         </div>
         <Link
@@ -72,11 +109,15 @@ function TodayBoard() {
                       </span>
                     )}
                     <Link to="/jobs/$jobId" params={{ jobId: j.id }} className="block">
-                      <div className="text-sm font-medium line-clamp-2">{j.description || "(no description)"}</div>
+                      <div className="text-sm font-medium line-clamp-2">
+                        {j.description || "(no description)"}
+                      </div>
                       <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
                         <Car className="w-3.5 h-3.5" />
                         <span className="truncate">
-                          {[j.vehicle?.year, j.vehicle?.make, j.vehicle?.model].filter(Boolean).join(" ") || "—"}
+                          {[j.vehicle?.year, j.vehicle?.make, j.vehicle?.model]
+                            .filter(Boolean)
+                            .join(" ") || "—"}
                         </span>
                       </div>
                       <div className="text-[11px] font-mono text-muted-foreground mt-1">

@@ -224,7 +224,10 @@ function Documents() {
           </thead>
           <tbody>
             {filtered.map((d: any) => (
-              <tr key={d.id} className="border-t border-border hover:bg-accent/30 transition-colors">
+              <tr
+                key={d.id}
+                className="border-t border-border hover:bg-accent/30 transition-colors"
+              >
                 <td className="p-3">
                   <Link
                     to="/documents/$docId"
@@ -243,9 +246,7 @@ function Documents() {
                 <td className="p-3">
                   <StatusPill status={d.processing_status} />
                 </td>
-                <td className="p-3 text-xs text-muted-foreground">
-                  {d.job?.description ?? "—"}
-                </td>
+                <td className="p-3 text-xs text-muted-foreground">{d.job?.description ?? "—"}</td>
                 <td className="p-3 text-right">
                   <button
                     onClick={async () => {

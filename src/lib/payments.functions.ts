@@ -22,7 +22,10 @@ export const listJobPayments = createServerFn({ method: "GET" })
       .select("total_owed")
       .eq("id", data.job_id)
       .single();
-    const totalPaid = (payments ?? []).reduce((s: number, p: PaymentRow) => s + Number(p.amount ?? 0), 0);
+    const totalPaid = (payments ?? []).reduce(
+      (s: number, p: PaymentRow) => s + Number(p.amount ?? 0),
+      0,
+    );
     const byInsurance = (payments ?? [])
       .filter((p: PaymentRow) => p.payer_type === "insurance")
       .reduce((s: number, p: PaymentRow) => s + Number(p.amount ?? 0), 0);

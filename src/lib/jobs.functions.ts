@@ -24,9 +24,15 @@ export const listJobs = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }) => {
     const offset = (data.page - 1) * data.limit;
-    const { data: rows, error, count } = await context.supabase
+    const {
+      data: rows,
+      error,
+      count,
+    } = await context.supabase
       .from("jobs")
-      .select("*, customer:customers(name), vehicle:vehicles(make,model,license_plate,vin)", { count: "exact" })
+      .select("*, customer:customers(name), vehicle:vehicles(make,model,license_plate,vin)", {
+        count: "exact",
+      })
       .order("created_at", { ascending: false })
       .range(offset, offset + data.limit - 1);
     if (error) throw new Error(error.message);
@@ -39,9 +45,7 @@ export const getJob = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { data: job, error } = await context.supabase
       .from("jobs")
-      .select(
-        "*, customer:customers(*), vehicle:vehicles(*)",
-      )
+      .select("*, customer:customers(*), vehicle:vehicles(*)")
       .eq("id", data.id)
       .single();
     if (error) throw new Error(error.message);
@@ -137,9 +141,7 @@ export const dashboardStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data: jobs } = await context.supabase.from("jobs").select("status,flagged");
-    const counts: Record<string, number> = Object.fromEntries(
-      JOB_STATUSES.map((s) => [s, 0]),
-    );
+    const counts: Record<string, number> = Object.fromEntries(JOB_STATUSES.map((s) => [s, 0]));
     let flagged = 0;
     (jobs ?? []).forEach((j) => {
       counts[j.status] = (counts[j.status] ?? 0) + 1;

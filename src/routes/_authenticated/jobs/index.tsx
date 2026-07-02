@@ -40,25 +40,56 @@ function JobsList() {
           <h1 className="text-3xl font-semibold">Jobs</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant={view === "kanban" ? "default" : "outline"} size="sm" onClick={() => setView("kanban")}>Kanban</Button>
-          <Button variant={view === "table" ? "default" : "outline"} size="sm" onClick={() => setView("table")}>Table</Button>
-          <Link to="/jobs/new"><Button size="sm">+ New Job</Button></Link>
+          <Button
+            variant={view === "kanban" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setView("kanban")}
+          >
+            Kanban
+          </Button>
+          <Button
+            variant={view === "table" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setView("table")}
+          >
+            Table
+          </Button>
+          <Link to="/jobs/new">
+            <Button size="sm">+ New Job</Button>
+          </Link>
         </div>
       </div>
       {view === "kanban" ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {STATUSES.map((s) => (
             <div key={s} className="bg-card border border-border rounded-md p-3 min-h-[200px]">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-3">{LABELS[s]}</div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
+                {LABELS[s]}
+              </div>
               <div className="space-y-2">
-                {data.filter((j: any) => j.status === s).map((j: any) => (
-                  <Link key={j.id} to="/jobs/$jobId" params={{ jobId: j.id }} className="block p-2 rounded bg-background border border-border hover:border-primary text-sm">
-                    <div className="font-medium truncate">{j.description || "(no description)"}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{j.customer?.name}</div>
-                    <div className="text-xs font-mono text-muted-foreground">{j.vehicle?.license_plate ?? j.vehicle?.vin}</div>
-                    {j.flagged && <div className="text-xs text-[oklch(0.769_0.188_70.08)] mt-1">⚑ flagged</div>}
-                  </Link>
-                ))}
+                {data
+                  .filter((j: any) => j.status === s)
+                  .map((j: any) => (
+                    <Link
+                      key={j.id}
+                      to="/jobs/$jobId"
+                      params={{ jobId: j.id }}
+                      className="block p-2 rounded bg-background border border-border hover:border-primary text-sm"
+                    >
+                      <div className="font-medium truncate">
+                        {j.description || "(no description)"}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">{j.customer?.name}</div>
+                      <div className="text-xs font-mono text-muted-foreground">
+                        {j.vehicle?.license_plate ?? j.vehicle?.vin}
+                      </div>
+                      {j.flagged && (
+                        <div className="text-xs text-[oklch(0.769_0.188_70.08)] mt-1">
+                          ⚑ flagged
+                        </div>
+                      )}
+                    </Link>
+                  ))}
               </div>
             </div>
           ))}
@@ -76,10 +107,18 @@ function JobsList() {
           <tbody>
             {data.map((j: any) => (
               <tr key={j.id} className="border-t border-border hover:bg-accent">
-                <td className="p-3"><Link to="/jobs/$jobId" params={{ jobId: j.id }} className="hover:underline">{j.description || "(no description)"}</Link></td>
+                <td className="p-3">
+                  <Link to="/jobs/$jobId" params={{ jobId: j.id }} className="hover:underline">
+                    {j.description || "(no description)"}
+                  </Link>
+                </td>
                 <td className="p-3">{j.customer?.name}</td>
-                <td className="p-3 font-mono text-xs">{j.vehicle?.license_plate ?? j.vehicle?.vin}</td>
-                <td className="p-3"><Badge status={j.status} /></td>
+                <td className="p-3 font-mono text-xs">
+                  {j.vehicle?.license_plate ?? j.vehicle?.vin}
+                </td>
+                <td className="p-3">
+                  <Badge status={j.status} />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -90,5 +129,9 @@ function JobsList() {
 }
 
 export function Badge({ status }: { status: string }) {
-  return <span className="text-xs px-2 py-0.5 rounded bg-secondary text-secondary-foreground">{LABELS[status] ?? status}</span>;
+  return (
+    <span className="text-xs px-2 py-0.5 rounded bg-secondary text-secondary-foreground">
+      {LABELS[status] ?? status}
+    </span>
+  );
 }

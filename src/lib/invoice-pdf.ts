@@ -5,9 +5,22 @@ type InvoiceData = {
   jobId: string;
   jobDescription: string | null;
   customer: { name: string; phone?: string | null; email?: string | null; address?: string | null };
-  vehicle: { year?: number | null; make?: string | null; model?: string | null; vin?: string | null; license_plate?: string | null };
+  vehicle: {
+    year?: number | null;
+    make?: string | null;
+    model?: string | null;
+    vin?: string | null;
+    license_plate?: string | null;
+  };
   totalOwed?: number | null;
-  payments: Array<{ paid_at: string; payer_type: string; payer_name?: string | null; amount: number; method?: string | null; note?: string | null }>;
+  payments: Array<{
+    paid_at: string;
+    payer_type: string;
+    payer_name?: string | null;
+    amount: number;
+    method?: string | null;
+    note?: string | null;
+  }>;
   reportedProblem?: string | null;
   odometer?: number | null;
   currency?: string;
@@ -47,16 +60,21 @@ export function generateInvoicePdf(data: InvoiceData) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.text(data.customer.name, M, y);
-  const vehLine = [data.vehicle.year, data.vehicle.make, data.vehicle.model].filter(Boolean).join(" ") || "—";
+  const vehLine =
+    [data.vehicle.year, data.vehicle.make, data.vehicle.model].filter(Boolean).join(" ") || "—";
   doc.text(vehLine, W / 2, y);
   y += 14;
-  if (data.customer.phone) { doc.text(data.customer.phone, M, y); }
+  if (data.customer.phone) {
+    doc.text(data.customer.phone, M, y);
+  }
   if (data.vehicle.license_plate) doc.text(`Plate: ${data.vehicle.license_plate}`, W / 2, y);
   y += 14;
   if (data.customer.email) doc.text(data.customer.email, M, y);
   if (data.vehicle.vin) doc.text(`VIN: ${data.vehicle.vin}`, W / 2, y);
   y += 14;
-  if (data.customer.address) { doc.text(data.customer.address, M, y); }
+  if (data.customer.address) {
+    doc.text(data.customer.address, M, y);
+  }
   if (data.odometer) doc.text(`Odometer: ${data.odometer} km`, W / 2, y);
   y += 28;
 
@@ -101,11 +119,18 @@ export function generateInvoicePdf(data: InvoiceData) {
   } else {
     for (const p of data.payments) {
       doc.text(new Date(p.paid_at).toLocaleDateString("en-CA"), M, y);
-      doc.text(`${p.payer_type.toUpperCase()}${p.payer_name ? " · " + p.payer_name : ""}`, M + 90, y);
+      doc.text(
+        `${p.payer_type.toUpperCase()}${p.payer_name ? " · " + p.payer_name : ""}`,
+        M + 90,
+        y,
+      );
       doc.text(p.method || "—", M + 240, y);
       doc.text(`${currency} ${Number(p.amount).toFixed(2)}`, W - M, y, { align: "right" });
       y += 14;
-      if (y > 720) { doc.addPage(); y = M; }
+      if (y > 720) {
+        doc.addPage();
+        y = M;
+      }
     }
   }
 

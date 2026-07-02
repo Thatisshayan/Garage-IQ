@@ -19,7 +19,7 @@ export const todayBoard = createServerFn({ method: "GET" })
 
     // Compute payment totals per active job
     const ids = (jobs ?? []).map((j) => j.id);
-    let payMap = new Map<string, number>();
+    const payMap = new Map<string, number>();
     if (ids.length) {
       const { data: pays } = await context.supabase
         .from("payments")

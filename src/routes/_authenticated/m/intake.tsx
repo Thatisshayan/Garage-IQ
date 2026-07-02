@@ -6,7 +6,13 @@ import { Camera, Loader2, Check, X, Car, FileText, ScanLine, ArrowRight } from "
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { extractVinFromPhoto, decodeVin, findDuplicateCustomer, findVehicleByVin, submitMobileIntake } from "@/lib/intake.functions";
+import {
+  extractVinFromPhoto,
+  decodeVin,
+  findDuplicateCustomer,
+  findVehicleByVin,
+  submitMobileIntake,
+} from "@/lib/intake.functions";
 import { getUploadUrl } from "@/lib/documents.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { IntakeInput } from "@/lib/schemas";
@@ -51,7 +57,9 @@ function MobileIntake() {
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   useEffect(() => {
-    return () => { previewUrls.forEach((url) => URL.revokeObjectURL(url)); };
+    return () => {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
   }, []);
 
   async function photoToDataUrl(file: File): Promise<string> {
@@ -69,7 +77,9 @@ function MobileIntake() {
       const dataUrl = await photoToDataUrl(file);
       const r = await extractFn({ data: { image_data_url: dataUrl, kind: "vin" } });
       if (r?.vin) {
-        const cleaned = String(r.vin).toUpperCase().replace(/[^A-Z0-9]/g, "");
+        const cleaned = String(r.vin)
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, "");
         setVin(cleaned);
         toast.success(`VIN: ${cleaned}`);
         if (cleaned.length >= 11) {
@@ -83,7 +93,9 @@ function MobileIntake() {
               form.setValue("vehicle.make", dec.make ?? "");
               form.setValue("vehicle.model", dec.model ?? "");
               form.setValue("vehicle.year", dec.year ? Number(dec.year) : null);
-              toast.success(`${dec.year ?? ""} ${dec.make ?? ""} ${dec.model ?? ""}`.trim() || "Decoded");
+              toast.success(
+                `${dec.year ?? ""} ${dec.make ?? ""} ${dec.model ?? ""}`.trim() || "Decoded",
+              );
             }
           }
         }
@@ -189,10 +201,17 @@ function MobileIntake() {
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[10px] tick uppercase tracking-[0.22em] text-muted-foreground">Quick Intake</div>
-            <div className="font-display text-lg font-semibold">Step {stepIdx + 1} / {STEP_ORDER.length}</div>
+            <div className="text-[10px] tick uppercase tracking-[0.22em] text-muted-foreground">
+              Quick Intake
+            </div>
+            <div className="font-display text-lg font-semibold">
+              Step {stepIdx + 1} / {STEP_ORDER.length}
+            </div>
           </div>
-          <button onClick={() => navigate({ to: "/today" })} className="p-2 -mr-2 text-muted-foreground hover:text-foreground">
+          <button
+            onClick={() => navigate({ to: "/today" })}
+            className="p-2 -mr-2 text-muted-foreground hover:text-foreground"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -272,10 +291,17 @@ function MobileIntake() {
         )}
 
         {step === "vehicle" && (
-          <Section title="Vehicle details" subtitle={vin ? "We tried to auto-fill from the VIN — confirm or fix." : "Enter what you can."}>
+          <Section
+            title="Vehicle details"
+            subtitle={
+              vin ? "We tried to auto-fill from the VIN — confirm or fix." : "Enter what you can."
+            }
+          >
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">Year</label>
+                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
+                  Year
+                </label>
                 <input
                   type="number"
                   {...form.register("vehicle.year", { valueAsNumber: true })}
@@ -283,19 +309,36 @@ function MobileIntake() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">Color</label>
-                <input {...form.register("vehicle.color")} className="w-full bg-card border border-border rounded-md px-3 py-3 text-base" />
+                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
+                  Color
+                </label>
+                <input
+                  {...form.register("vehicle.color")}
+                  className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
+                />
               </div>
               <div>
-                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">Make</label>
-                <input {...form.register("vehicle.make")} className="w-full bg-card border border-border rounded-md px-3 py-3 text-base" />
+                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
+                  Make
+                </label>
+                <input
+                  {...form.register("vehicle.make")}
+                  className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
+                />
               </div>
               <div>
-                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">Model</label>
-                <input {...form.register("vehicle.model")} className="w-full bg-card border border-border rounded-md px-3 py-3 text-base" />
+                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
+                  Model
+                </label>
+                <input
+                  {...form.register("vehicle.model")}
+                  className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
+                />
               </div>
             </div>
-            <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mt-4 mb-1">Odometer (optional)</label>
+            <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mt-4 mb-1">
+              Odometer (optional)
+            </label>
             <div className="flex gap-2">
               <input
                 {...form.register("job.odometer", { valueAsNumber: true })}
@@ -308,10 +351,16 @@ function MobileIntake() {
                 disabled={busy}
                 className="px-4 rounded-md border border-border bg-card hover:border-primary"
               >
-                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                {busy ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Camera className="w-4 h-4" />
+                )}
               </button>
               <input
-                ref={(el) => { fileInputs.current.odo = el; }}
+                ref={(el) => {
+                  fileInputs.current.odo = el;
+                }}
                 type="file"
                 accept="image/*"
                 capture="environment"
@@ -325,7 +374,9 @@ function MobileIntake() {
         {step === "customer" && (
           <Section title="Customer" subtitle="Name + phone. We'll check for duplicates.">
             <div>
-              <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">Full name *</label>
+              <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
+                Full name *
+              </label>
               <input
                 {...form.register("customer.name")}
                 onBlur={checkCustomerDup}
@@ -338,7 +389,9 @@ function MobileIntake() {
               )}
             </div>
             <div>
-              <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">Phone</label>
+              <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
+                Phone
+              </label>
               <input
                 type="tel"
                 {...form.register("customer.phone")}
@@ -348,7 +401,9 @@ function MobileIntake() {
             </div>
             {matches.length > 0 && !customerId && (
               <div className="mt-3 p-3 rounded-md border border-amber-400/40 bg-amber-400/5">
-                <div className="text-[10px] tick uppercase text-amber-400 mb-2">Possible match — reuse?</div>
+                <div className="text-[10px] tick uppercase text-amber-400 mb-2">
+                  Possible match — reuse?
+                </div>
                 {matches.map((m) => (
                   <button
                     key={m.id}
@@ -385,12 +440,18 @@ function MobileIntake() {
               disabled={busy}
               className="w-full aspect-video rounded-lg border-2 border-dashed border-border bg-card flex flex-col items-center justify-center gap-2 hover:border-primary transition"
             >
-              {busy ? <Loader2 className="w-8 h-8 animate-spin text-primary" /> : <Camera className="w-8 h-8 text-primary" />}
+              {busy ? (
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              ) : (
+                <Camera className="w-8 h-8 text-primary" />
+              )}
               <span className="text-sm font-medium">Add photos</span>
               <span className="text-xs text-muted-foreground">{photoPaths.length} attached</span>
             </button>
             <input
-              ref={(el) => { fileInputs.current.damage = el; }}
+              ref={(el) => {
+                fileInputs.current.damage = el;
+              }}
               type="file"
               accept="image/*"
               capture="environment"
@@ -401,7 +462,12 @@ function MobileIntake() {
             {previewUrls.length > 0 && (
               <div className="mt-4 grid grid-cols-3 gap-2">
                 {previewUrls.map((u, i) => (
-                  <img key={i} src={u} alt="" className="aspect-square object-cover rounded-md border border-border" />
+                  <img
+                    key={i}
+                    src={u}
+                    alt=""
+                    className="aspect-square object-cover rounded-md border border-border"
+                  />
                 ))}
               </div>
             )}
@@ -410,11 +476,25 @@ function MobileIntake() {
 
         {step === "review" && (
           <Section title="Review" subtitle="Double-check before saving.">
-            <ReviewRow icon={<Car />} label="Vehicle" value={`${form.getValues("vehicle.year") || ""} ${form.getValues("vehicle.make")} ${form.getValues("vehicle.model")}`.trim() || "—"} />
+            <ReviewRow
+              icon={<Car />}
+              label="Vehicle"
+              value={
+                `${form.getValues("vehicle.year") || ""} ${form.getValues("vehicle.make")} ${form.getValues("vehicle.model")}`.trim() ||
+                "—"
+              }
+            />
             <ReviewRow label="VIN" value={vin || "—"} mono />
             <ReviewRow label="Plate" value={plate || "—"} mono />
-            <ReviewRow label="Odometer" value={form.getValues("job.odometer") ? `${form.getValues("job.odometer")} km` : "—"} />
-            <ReviewRow icon={<FileText />} label="Customer" value={form.getValues("customer.name") || "—"} />
+            <ReviewRow
+              label="Odometer"
+              value={form.getValues("job.odometer") ? `${form.getValues("job.odometer")} km` : "—"}
+            />
+            <ReviewRow
+              icon={<FileText />}
+              label="Customer"
+              value={form.getValues("customer.name") || "—"}
+            />
             <ReviewRow label="Phone" value={form.getValues("customer.phone") || "—"} />
             <ReviewRow label="Problem" value={form.getValues("job.reported_problem") || "—"} />
             <ReviewRow label="Photos" value={`${photoPaths.length} attached`} />
@@ -445,7 +525,8 @@ function MobileIntake() {
             disabled={busy || !form.getValues("customer.name")}
             className="flex-1 px-4 py-3 rounded-md bg-primary text-primary-foreground font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Save & start job
+            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}{" "}
+            Save & start job
           </button>
         )}
       </nav>
@@ -481,7 +562,13 @@ function PhotoButton({ icon, label, busy, onFile, done }: any) {
           done ? "border-green-400/60 bg-green-400/5" : "border-border bg-card hover:border-primary"
         }`}
       >
-        {busy ? <Loader2 className="w-10 h-10 animate-spin text-primary" /> : done ? <Check className="w-10 h-10 text-green-400" /> : <div className="text-primary">{icon}</div>}
+        {busy ? (
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        ) : done ? (
+          <Check className="w-10 h-10 text-green-400" />
+        ) : (
+          <div className="text-primary">{icon}</div>
+        )}
         <span className="text-sm font-medium px-4 text-center">{label}</span>
       </button>
       <input

@@ -22,7 +22,16 @@ const ExtractSchemas = {
     vendor: z.string().nullable(),
     invoice_date: z.string().nullable(),
     due_date: z.string().nullable(),
-    line_items: z.array(z.object({ description: z.string(), quantity: z.number().nullable(), unit_price: z.number().nullable(), total: z.number().nullable() })).default([]),
+    line_items: z
+      .array(
+        z.object({
+          description: z.string(),
+          quantity: z.number().nullable(),
+          unit_price: z.number().nullable(),
+          total: z.number().nullable(),
+        }),
+      )
+      .default([]),
     subtotal: z.number().nullable(),
     tax: z.number().nullable(),
     total: z.number().nullable(),
@@ -47,7 +56,15 @@ const ExtractSchemas = {
     vendor: z.string().nullable(),
     po_number: z.string().nullable(),
     date: z.string().nullable(),
-    line_items: z.array(z.object({ description: z.string(), quantity: z.number().nullable(), unit_price: z.number().nullable() })).default([]),
+    line_items: z
+      .array(
+        z.object({
+          description: z.string(),
+          quantity: z.number().nullable(),
+          unit_price: z.number().nullable(),
+        }),
+      )
+      .default([]),
     total: z.number().nullable(),
     vin: z.string().nullable(),
     field_confidence: z.record(z.string(), z.number()).default({}),
@@ -104,10 +121,7 @@ async function callModelWithFile(
   return result.text;
 }
 
-export async function processDocumentNow(
-  supabase: SupabaseClient<Database>,
-  documentId: string,
-) {
+export async function processDocumentNow(supabase: SupabaseClient<Database>, documentId: string) {
   const { data: doc, error } = await supabase
     .from("documents")
     .select("*")
@@ -115,10 +129,7 @@ export async function processDocumentNow(
     .single();
   if (error || !doc) throw new Error("Document not found");
 
-  await supabase
-    .from("documents")
-    .update({ processing_status: "processing" })
-    .eq("id", documentId);
+  await supabase.from("documents").update({ processing_status: "processing" }).eq("id", documentId);
 
   try {
     // Download file from storage
@@ -158,7 +169,14 @@ export async function processDocumentNow(
       classification = { type: "other", confidence: 0 };
     }
 
-    const validTypes = ["invoice", "receipt", "purchase_order", "release_form", "insurance_document", "other"];
+    const validTypes = [
+      "invoice",
+      "receipt",
+      "purchase_order",
+      "release_form",
+      "insurance_document",
+      "other",
+    ];
     if (!validTypes.includes(classification.type)) classification.type = "other";
 
     const conf = Number(classification.confidence) || 0;
@@ -228,11 +246,7 @@ async function autoLink(
   docType: DocType,
   extracted: any,
 ) {
-  const { data: doc } = await supabase
-    .from("documents")
-    .select("*")
-    .eq("id", documentId)
-    .single();
+  const { data: doc } = await supabase.from("documents").select("*").eq("id", documentId).single();
   if (!doc) return;
 
   let vehicleId = doc.vehicle_id;
@@ -313,9 +327,17 @@ async function autoLink(
       effective_date: extracted?.effective_date ?? null,
     });
     if (claimStatus === "approved" || claimStatus === "partial") {
-      await applyJobEvent(supabase, { jobId, event: "insurance_approved", sourceDocumentId: documentId });
+      await applyJobEvent(supabase, {
+        jobId,
+        event: "insurance_approved",
+        sourceDocumentId: documentId,
+      });
     } else if (claimStatus === "denied") {
-      await applyJobEvent(supabase, { jobId, event: "insurance_denied", sourceDocumentId: documentId });
+      await applyJobEvent(supabase, {
+        jobId,
+        event: "insurance_denied",
+        sourceDocumentId: documentId,
+      });
     }
   } else if (docType === "purchase_order") {
     await applyJobEvent(supabase, { jobId, event: "po_linked", sourceDocumentId: documentId });
@@ -352,11 +374,7 @@ export async function backfillFromDocument(
   userId: string,
 ): Promise<{ created: { customer?: string; vehicle?: string; job?: string } }> {
   const created: { customer?: string; vehicle?: string; job?: string } = {};
-  const { data: doc } = await supabase
-    .from("documents")
-    .select("*")
-    .eq("id", documentId)
-    .single();
+  const { data: doc } = await supabase.from("documents").select("*").eq("id", documentId).single();
   if (!doc || doc.job_id) return { created };
 
   const ex = (doc.extracted_data as any)?.extracted ?? {};

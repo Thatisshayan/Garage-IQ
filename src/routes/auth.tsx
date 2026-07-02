@@ -34,7 +34,9 @@ function AuthPage() {
     try {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
-          email, password, options: { emailRedirectTo: window.location.origin },
+          email,
+          password,
+          options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
         toast.success("Account created — signing you in…");
@@ -45,7 +47,9 @@ function AuthPage() {
       navigate({ to: "/" });
     } catch (err: any) {
       toast.error(err.message ?? "Authentication failed");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function google() {
@@ -70,7 +74,9 @@ function AuthPage() {
           </div>
           <div>
             <div className="font-display text-base font-semibold leading-none">Garage IQ</div>
-            <div className="text-[10px] tick text-muted-foreground tracking-[0.2em] mt-1">GARAGE / v1.0</div>
+            <div className="text-[10px] tick text-muted-foreground tracking-[0.2em] mt-1">
+              GARAGE / v1.0
+            </div>
           </div>
         </div>
 
@@ -79,12 +85,15 @@ function AuthPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="text-[11px] tick uppercase tracking-[0.24em] text-muted-foreground mb-4">// pit-lane operations</div>
+          <div className="text-[11px] tick uppercase tracking-[0.24em] text-muted-foreground mb-4">
+            // pit-lane operations
+          </div>
           <h2 className="font-display text-5xl font-semibold leading-[1.02] max-w-md">
             Every claim. Every car. <span className="ember-text">Zero friction.</span>
           </h2>
           <p className="mt-4 text-sm text-muted-foreground max-w-sm">
-            AI-orchestrated repair workflows: OCR, classification, insurer state machines, and a live ops deck — built for shops that move.
+            AI-orchestrated repair workflows: OCR, classification, insurer state machines, and a
+            live ops deck — built for shops that move.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-3 max-w-md">
             {[
@@ -127,32 +136,68 @@ function AuthPage() {
             {mode === "signin" ? "Sign in to the deck" : "Create your account"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1.5">
-            {mode === "signin" ? "Resume where the bay left off." : "First user becomes shop admin."}
+            {mode === "signin"
+              ? "Resume where the bay left off."
+              : "First user becomes shop admin."}
           </p>
 
           <div className="panel p-6 mt-6 space-y-4">
             <form onSubmit={submit} className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-[10px] tick uppercase tracking-[0.18em] text-muted-foreground">Email</Label>
-                <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="bg-background/40" />
+                <Label
+                  htmlFor="email"
+                  className="text-[10px] tick uppercase tracking-[0.18em] text-muted-foreground"
+                >
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-background/40"
+                />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pw" className="text-[10px] tick uppercase tracking-[0.18em] text-muted-foreground">Password</Label>
-                <Input id="pw" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="bg-background/40" />
+                <Label
+                  htmlFor="pw"
+                  className="text-[10px] tick uppercase tracking-[0.18em] text-muted-foreground"
+                >
+                  Password
+                </Label>
+                <Input
+                  id="pw"
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-background/40"
+                />
                 {mode === "signin" && (
-                  <Link to="/reset-password" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
+                  <Link
+                    to="/reset-password"
+                    className="text-[11px] text-muted-foreground hover:text-primary transition-colors"
+                  >
                     Forgot password?
                   </Link>
                 )}
               </div>
-              <Button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 ember-glow">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 ember-glow"
+              >
                 {loading ? "…" : mode === "signin" ? "Sign in →" : "Create account →"}
               </Button>
             </form>
             <div className="flex items-center gap-3 text-[10px] tick uppercase tracking-[0.2em] text-muted-foreground">
               <div className="flex-1 h-px bg-border" /> or <div className="flex-1 h-px bg-border" />
             </div>
-            <Button variant="outline" className="w-full" onClick={google}>Continue with Google</Button>
+            <Button variant="outline" className="w-full" onClick={google}>
+              Continue with Google
+            </Button>
           </div>
 
           <button
@@ -160,7 +205,9 @@ function AuthPage() {
             className="mt-4 text-xs text-muted-foreground hover:text-primary transition-colors w-full text-center"
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
           >
-            {mode === "signin" ? "Need an account? Sign up →" : "← Already have an account? Sign in"}
+            {mode === "signin"
+              ? "Need an account? Sign up →"
+              : "← Already have an account? Sign in"}
           </button>
         </motion.div>
       </div>

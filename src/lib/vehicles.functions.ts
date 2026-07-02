@@ -15,7 +15,11 @@ export const listVehicles = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }) => {
     const offset = (data.page - 1) * data.limit;
-    const { data: rows, error, count } = await context.supabase
+    const {
+      data: rows,
+      error,
+      count,
+    } = await context.supabase
       .from("vehicles")
       .select("*, customer:customers(name)", { count: "exact" })
       .order("created_at", { ascending: false })

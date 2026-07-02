@@ -272,3 +272,72 @@ No gaps found this round — Sprint 0.2 is legitimately complete as reported.
 - Sprint 0.2 was fully verified this time — no gaps found, so nothing here duplicates prior work. Trust the "Confirmed DONE" sections above rather than re-checking them yourself.
 - Phase 11 and 13 are the substantive engineering work; Phase 12 and 14 are cheap but easy to skip — don't skip them, a test suite nobody runs in CI silently rots.
 - If Shayan hasn't answered the RLS/search-consolidation questions by the time you reach Phase 15, ship without them and note it explicitly rather than blocking the sprint — those were already correctly flagged as product decisions in Sprint 0.2, not engineering blockers.
+
+---
+---
+
+## VERIFICATION — Sprint 0.3 claimed-complete audit (2026-07-02)
+
+Verified: `git log` (4 real commits matching the claim), `bun run test` (69/69 pass on `main`), `bun run build` (clean), file/grep checks on `schemas.ts`, `form.tsx`, form-wiring, `payments.functions.ts` typing, `AGENTS.md`/`README.md` content. Additionally ran `bun run lint` — **not claimed as passing in the report, but implicitly required by the new CI workflow Phase 12 just added — and it fails.**
+
+### Confirmed DONE
+- ✅ `src/lib/schemas.ts` exists with shared Zod schemas; `src/components/ui/form.tsx` recreated.
+- ✅ Client-side validation actually wired — `zodResolver`/`useForm` present in `m/intake.tsx`, `jobs/new.tsx`, `customers/index.tsx` (matches the three forms claimed).
+- ✅ `.github/workflows/ci.yml` exists, correctly triggers on push/PR to `main`, runs install → lint → test → build in that order.
+- ✅ `.gitattributes` (`* text=auto eol=lf`) added — verified via a **fresh clone into a scratch directory** (not the working checkout, which had stale local CRLF from before `.gitattributes` existed and briefly gave a false positive) that committed blobs are genuinely LF-normalized.
+- ✅ `payments.functions.ts` — zero `: any` annotations remain, confirmed via grep.
+- ✅ `AGENTS.md` documents the error-handling convention (throw-by-default, `{ error }` return for rate limiters + AI assistant) clearly and specifically.
+- ✅ `README.md` — no Lovable references, `GOOGLE_GENERATIVE_AI_API_KEY` documented in both the env table and setup section.
+- ✅ `bun run test` — 69/69 pass, confirmed on current `main`.
+- ✅ `bun run build` — clean, 3 targets, confirmed on current `main`.
+
+### Gap found — not claimed, but a real blocker for what Phase 12 just shipped
+- ❌ **`bun run lint` fails on a genuinely fresh checkout: 1212 problems across 51 files** (1082 auto-fixable via `--fix`, the remainder mostly `@typescript-eslint/no-explicit-any` — 121 occurrences project-wide, plus some real Prettier formatting violations in files opencode itself touched this sprint, e.g. `update-password.tsx`). This is **pre-existing project-wide debt, not something Sprint 0.3 introduced** — but Sprint 0.3's own Phase 12 wired lint into CI as a required, blocking step. That means the first real CI run on this repo goes red immediately, on essentially every file, defeating the purpose of adding CI in the first place. The report never mentions running `bun run lint` locally before calling Phase 12 "done" — it should have been the acceptance check for that phase.
+- This is separate from and unrelated to the local CRLF false-alarm above — that was resolved as a non-issue via fresh-clone testing; this lint failure reproduces identically on a fresh clone, so it's real.
+
+---
+
+## Garage IQ — Sprint 0.4 (continues Sprint 0.3)
+
+**Goal:** Get CI to a genuinely green state — fix or auto-fix the lint debt Phase 12 exposed — then do a final launch-readiness pass: manual end-to-end smoke test, and closing out whichever of the two outstanding product decisions (RLS, search consolidation) you've made a call on by then.
+
+**By the end of this sprint, what will be true:**
+1. `bun run lint` passes clean on a fresh clone — CI actually goes green, not just "exists."
+2. The `@typescript-eslint/no-explicit-any` count (121 currently, project-wide) is meaningfully reduced, prioritized by the same money-path-first logic used in Sprint 0.3's Phase 13 — the goal isn't zero `any` everywhere, it's "nothing dangerous left untyped."
+3. A real human (you) has walked through intake → document upload → AI processing → claim/invoice creation → payment → job completion once, end-to-end, on the actual deployed/preview build — not just `bun run build` succeeding.
+4. Whatever you've decided on RLS row isolation and search consolidation is implemented (or explicitly deferred with a written reason) — these are the last two open items from the original audit.
+
+**Source of truth:** `AUDIT-REPORT.md` + all three verification sections above (Sprint 0.1, 0.2, 0.3), which supersede opencode's own sprint notes wherever they conflict.
+
+---
+
+### Phase 16 — Make CI Actually Pass (do this first — it blocks everything else from being trustworthy)
+
+- [ ] Run `bun run lint --fix` (or the project's equivalent) to auto-resolve the ~1082 mechanically-fixable Prettier violations. Review the diff before committing — auto-fix is generally safe for formatting-only rules but verify nothing semantic got touched.
+- [ ] For the remaining errors that aren't auto-fixable (the `no-explicit-any` occurrences and any other rule violations), triage: fix what's cheap, add targeted `eslint-disable` with a one-line reason comment only where genuinely justified (e.g. a truly dynamic AI-response shape), don't blanket-disable the rule project-wide.
+- [ ] After fixing, re-verify on a **fresh clone**, not just the working directory — Sprint 0.3's lint issue only surfaced that way; don't let a locally-stale checkout hide a regression again.
+- [ ] Push and confirm the GitHub Actions run on `main` actually goes green — check the Actions tab, don't just trust the local run.
+
+### Phase 17 — Targeted `any` Reduction (beyond the money path already done in Phase 13)
+
+- [ ] Grep `no-explicit-any` output for remaining hits outside `invoices`/`payments`/`claims` (already typed in Sprint 0.3) — prioritize the AI extraction pipeline output (`document-ai.server.ts`) and anything in `documents.functions.ts` next, since those feed the money path indirectly.
+- [ ] Not a launch blocker to hit zero — note remaining `any` usage that's genuinely fine (e.g. generic AI assistant filter values, already flagged as legitimate in Sprint 0.2's verification) vs. what's just untyped laziness.
+
+### Phase 18 — Manual End-to-End Smoke Test (human-in-the-loop, not opencode-automatable)
+
+- [ ] You (or someone on the team) walks the full flow once on a real/preview deployment: intake → document upload → AI processing (real Gemini call, not mocked) → claim/invoice creation → payment → job completion.
+- [ ] Confirm password reset actually delivers email — this needs Supabase SMTP configured in the dashboard (flagged back in the env/token discussion) — opencode can't verify this, only you can by actually triggering a reset and checking your inbox.
+- [ ] Note anything that breaks or feels wrong in real use that no amount of unit testing would catch (UX friction, AI misclassification on a real document, etc.).
+
+### Phase 19 — Close the Last Two Product Decisions
+
+- [ ] RLS row isolation — implement whichever of the 3 options in `SECURITY-DECISIONS.md` you've chosen, or explicitly confirm "keep as-is" and update the doc from "awaiting decision" to "decided: current model, reason: X."
+- [ ] Search consolidation — same treatment: implement the merge, or document why both `GlobalLookup` and `/search` stay as intentionally distinct tools.
+
+---
+
+### Notes for opencode (Sprint 0.4)
+
+- Phase 16 is non-negotiable and comes first — everything Sprint 0.3 built around CI is currently theater until lint actually passes. Don't start Phase 17/18/19 work until `bun run lint` is green on a fresh clone AND the GitHub Actions run on `main` shows green, not just locally.
+- The lint failure was not a Sprint 0.3 regression — it's debt that predates Sprint 0.3 entirely and simply wasn't visible until CI enforcement was added. No blame here, just fix it now that it's caught.
+- Phase 18 requires a human; don't attempt to substitute an automated test for it and call it done — that's explicitly the gap unit tests can't close.

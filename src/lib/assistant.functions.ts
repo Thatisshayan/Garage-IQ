@@ -30,9 +30,7 @@ const PlanSchema = z.object({
       }),
     )
     .default([]),
-  order: z
-    .object({ column: z.string().max(60), ascending: z.boolean().default(false) })
-    .optional(),
+  order: z.object({ column: z.string().max(60), ascending: z.boolean().default(false) }).optional(),
   limit: z.number().int().min(1).max(100).default(25),
   explanation: z.string().max(500),
 });
@@ -53,9 +51,7 @@ import { parseJson, isRateLimited } from "./utils";
 
 export const aiAssistantQuery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ question: z.string().min(2).max(500) }).parse(d),
-  )
+  .inputValidator((d: unknown) => z.object({ question: z.string().min(2).max(500) }).parse(d))
   .handler(async ({ data, context }) => {
     if (isRateLimited(`assistant:${context.user.id}`, 20, 60_000)) {
       return { error: "Rate limit exceeded. Try again in a minute." };

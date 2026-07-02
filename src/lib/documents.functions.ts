@@ -75,13 +75,15 @@ const extractedReceipt = z.object({
   field_confidence: z.record(z.string(), z.number()).default({}),
 });
 
-const ExtractedDataSchema = z.discriminatedUnion("type", [
-  extractedInvoice.extend({ type: z.literal("invoice") }),
-  extractedInsurance.extend({ type: z.literal("insurance_document") }),
-  extractedPurchaseOrder.extend({ type: z.literal("purchase_order") }),
-  extractedReleaseForm.extend({ type: z.literal("release_form") }),
-  extractedReceipt.extend({ type: z.literal("receipt") }),
-]).nullable();
+const ExtractedDataSchema = z
+  .discriminatedUnion("type", [
+    extractedInvoice.extend({ type: z.literal("invoice") }),
+    extractedInsurance.extend({ type: z.literal("insurance_document") }),
+    extractedPurchaseOrder.extend({ type: z.literal("purchase_order") }),
+    extractedReleaseForm.extend({ type: z.literal("release_form") }),
+    extractedReceipt.extend({ type: z.literal("receipt") }),
+  ])
+  .nullable();
 
 export const createDocumentRecord = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -148,7 +150,9 @@ export const listDocuments = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     let q = context.supabase
       .from("documents")
-      .select("*, job:jobs(id,description), customer:customers(name), vehicle:vehicles(vin,license_plate)")
+      .select(
+        "*, job:jobs(id,description), customer:customers(name), vehicle:vehicles(vin,license_plate)",
+      )
       .order("created_at", { ascending: false });
     if (data.type) q = q.eq("type", data.type);
     if (data.status) q = q.eq("processing_status", data.status);
@@ -180,10 +184,7 @@ export const ingestHistoricalDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    await context.supabase
-      .from("documents")
-      .update({ is_historical: true })
-      .eq("id", data.id);
+    await context.supabase.from("documents").update({ is_historical: true }).eq("id", data.id);
     try {
       const { processDocumentNow, backfillFromDocument } = await import("./document-ai.server");
       await processDocumentNow(context.supabase, data.id);
@@ -228,7 +229,10 @@ export const updateDocument = createServerFn({ method: "POST" })
     const { id, ...rest } = data;
     const update: Record<string, any> = {};
     for (const [k, v] of Object.entries(rest)) if (v !== undefined) update[k] = v;
-    const { error } = await context.supabase.from("documents").update(update as any).eq("id", id);
+    const { error } = await context.supabase
+      .from("documents")
+      .update(update as any)
+      .eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -260,9 +264,7 @@ export const resolveReview = createServerFn({ method: "POST" })
 // Returns a signed upload URL for direct client upload to storage.
 export const getUploadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ file_name: z.string().min(1).max(500) }).parse(d),
-  )
+  .inputValidator((d: unknown) => z.object({ file_name: z.string().min(1).max(500) }).parse(d))
   .handler(async ({ data, context }) => {
     const safe = data.file_name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const path = `${context.userId}/${Date.now()}-${safe}`;
