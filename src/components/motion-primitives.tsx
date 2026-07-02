@@ -1,5 +1,5 @@
 import { motion, useMotionValue, useTransform, animate, type MotionProps } from "framer-motion";
-import { useEffect, type ReactNode } from "react";
+import { useEffect } from "react";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -41,5 +41,4 @@ export function Counter({ value, duration = 1.1 }: { value: number; duration?: n
   return <motion.span>{rounded}</motion.span>;
 }
 
-export const MotionDiv = motion.div;
 export type { MotionProps };
