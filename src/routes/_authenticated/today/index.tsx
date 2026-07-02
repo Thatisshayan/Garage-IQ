@@ -6,7 +6,7 @@ import { Phone, Car, AlertTriangle, Wrench, ShieldCheck, Package, Banknote, Hour
 import { todayBoard } from "@/lib/today.functions";
 
 export const Route = createFileRoute("/_authenticated/today/")({
-  head: () => ({ meta: [{ title: "Today — Workshop OpsDeck" }] }),
+  head: () => ({ meta: [{ title: "Today — Garage IQ" }] }),
   component: TodayBoard,
 });
 

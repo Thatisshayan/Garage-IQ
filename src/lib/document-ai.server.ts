@@ -8,7 +8,7 @@ import { applyJobEvent } from "./state-machine.server";
 
 type DocType = Database["public"]["Enums"]["doc_type"];
 
-const CLASSIFY_PROMPT = `You are a workshop document classifier. Read the document and decide its type.
+const CLASSIFY_PROMPT = `You are a garage document classifier. Read the document and decide its type.
 Return strict JSON: {"type":"invoice|receipt|purchase_order|release_form|insurance_document|other","confidence":0..1,"reasoning":"..."}
 - invoice: bill from vendor with line items, tax, total
 - receipt: simple proof of purchase

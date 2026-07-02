@@ -7,7 +7,7 @@ import { Counter, stagger, itemUp } from "@/components/motion-primitives";
 import { ArrowUpRight, Activity, AlertTriangle, Inbox, Receipt, ShieldAlert } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/")({
-  head: () => ({ meta: [{ title: "Overview — Workshop OpsDeck" }] }),
+  head: () => ({ meta: [{ title: "Overview — Garage IQ" }] }),
   component: Dashboard,
 });
 
@@ -41,7 +41,7 @@ function Dashboard() {
             Live · Bay status
           </div>
           <h1 className="mt-3 font-display text-5xl font-semibold leading-[1.02]">
-            Workshop <span className="ember-text">command deck</span>
+            Garage <span className="ember-text">command deck</span>
           </h1>
           <p className="mt-2 text-sm text-muted-foreground max-w-lg">
             Every claim, every car, every document — orchestrated. {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}.

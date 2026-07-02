@@ -32,7 +32,7 @@ function Assistant() {
     <div className="p-8 space-y-6 max-w-4xl">
       <div>
         <h1 className="text-3xl font-semibold">AI Assistant</h1>
-        <p className="text-sm text-muted-foreground">Ask read-only questions about your workshop. Examples: "jobs awaiting insurance", "unpaid invoices over 1000", "documents in review".</p>
+        <p className="text-sm text-muted-foreground">Ask read-only questions about your garage. Examples: "jobs awaiting insurance", "unpaid invoices over 1000", "documents in review".</p>
       </div>
       <div className="space-y-4">
         {history.map((h, i) => (

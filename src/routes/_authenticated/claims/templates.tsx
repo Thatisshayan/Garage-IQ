@@ -78,7 +78,7 @@ function TemplatesPage() {
         <div className="text-[10px] tick uppercase tracking-[0.24em] text-muted-foreground">Insurance</div>
         <h1 className="font-display text-3xl mt-1">Claim templates</h1>
         <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
-          Upload your insurer's blank PDF claim form once, map its fields to workshop data, and every future claim auto-fills from the job.
+          Upload your insurer's blank PDF claim form once, map its fields to garage data, and every future claim auto-fills from the job.
         </p>
       </div>
 

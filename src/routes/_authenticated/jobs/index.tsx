@@ -6,7 +6,7 @@ import { listJobs } from "@/lib/jobs.functions";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/jobs/")({
-  head: () => ({ meta: [{ title: "Jobs — Workshop OpsDeck" }] }),
+  head: () => ({ meta: [{ title: "Jobs — Garage IQ" }] }),
   component: JobsList,
 });
 

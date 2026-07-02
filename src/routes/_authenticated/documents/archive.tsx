@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Archive, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/documents/archive")({
-  head: () => ({ meta: [{ title: "Document archive — Workshop OpsDeck" }] }),
+  head: () => ({ meta: [{ title: "Document archive — Garage IQ" }] }),
   component: ArchivePage,
 });
 

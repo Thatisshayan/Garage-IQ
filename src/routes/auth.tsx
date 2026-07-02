@@ -11,7 +11,7 @@ import { Wrench } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Sign in — Workshop OpsDeck" }] }),
+  head: () => ({ meta: [{ title: "Sign in — Garage IQ" }] }),
   component: AuthPage,
 });
 
@@ -67,8 +67,8 @@ function AuthPage() {
             <Wrench className="w-4 h-4 text-[var(--ember-foreground)]" strokeWidth={2.5} />
           </div>
           <div>
-            <div className="font-display text-base font-semibold leading-none">OpsDeck</div>
-            <div className="text-[10px] tick text-muted-foreground tracking-[0.2em] mt-1">WORKSHOP / v1.0</div>
+            <div className="font-display text-base font-semibold leading-none">Garage IQ</div>
+            <div className="text-[10px] tick text-muted-foreground tracking-[0.2em] mt-1">GARAGE / v1.0</div>
           </div>
         </div>
 
@@ -99,7 +99,7 @@ function AuthPage() {
         </motion.div>
 
         <div className="text-[10px] tick uppercase tracking-[0.2em] text-muted-foreground">
-          © {new Date().getFullYear()} OpsDeck · Secured workshop infra
+          © {new Date().getFullYear()} Garage IQ · Secured garage infra
         </div>
       </div>
 
@@ -115,7 +115,7 @@ function AuthPage() {
             <div className="w-9 h-9 rounded-md bg-[var(--gradient-ember)] grid place-items-center ember-glow">
               <Wrench className="w-4 h-4 text-[var(--ember-foreground)]" strokeWidth={2.5} />
             </div>
-            <div className="font-display text-base font-semibold">OpsDeck</div>
+            <div className="font-display text-base font-semibold">Garage IQ</div>
           </div>
 
           <div className="text-[11px] tick uppercase tracking-[0.24em] text-muted-foreground">

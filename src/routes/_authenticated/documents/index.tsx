@@ -17,7 +17,7 @@ import { UploadCloud, Archive, History, Sparkles } from "lucide-react";
 import { stagger, itemUp } from "@/components/motion-primitives";
 
 export const Route = createFileRoute("/_authenticated/documents/")({
-  head: () => ({ meta: [{ title: "Documents — Workshop OpsDeck" }] }),
+  head: () => ({ meta: [{ title: "Documents — Garage IQ" }] }),
   component: Documents,
 });
 

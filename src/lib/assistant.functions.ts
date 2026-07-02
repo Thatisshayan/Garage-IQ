@@ -37,7 +37,7 @@ const PlanSchema = z.object({
   explanation: z.string().max(500),
 });
 
-const SYSTEM = `You are a read-only assistant for a car-workshop database. Given a question, output strict JSON describing one safe SELECT query. Tables and key columns:
+const SYSTEM = `You are a read-only assistant for a car-garage database. Given a question, output strict JSON describing one safe SELECT query. Tables and key columns:
 - customers(id,name,email,phone,address)
 - vehicles(id,customer_id,make,model,year,vin,license_plate,color)
 - jobs(id,customer_id,vehicle_id,description,status,flagged,created_at) status in (pending,awaiting_insurance,parts_ordered,in_progress,awaiting_payment,completed)

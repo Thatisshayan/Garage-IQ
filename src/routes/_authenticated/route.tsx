@@ -51,8 +51,8 @@ function AuthedLayout() {
               <Wrench className="w-4 h-4 text-[var(--ember-foreground)]" strokeWidth={2.5} />
             </div>
             <div>
-              <div className="font-display text-[15px] font-semibold leading-none">OpsDeck</div>
-              <div className="text-[10px] tick text-muted-foreground tracking-[0.18em] mt-1">WORKSHOP / v1.0</div>
+              <div className="font-display text-[15px] font-semibold leading-none">Garage IQ</div>
+              <div className="text-[10px] tick text-muted-foreground tracking-[0.18em] mt-1">GARAGE / v1.0</div>
             </div>
           </div>
           <div className="mt-4 flex items-center gap-2 text-[10px] tick uppercase tracking-[0.16em] text-muted-foreground">
