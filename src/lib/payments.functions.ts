@@ -2,6 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { PaymentInput } from "./schemas";
+import type { Database } from "@/integrations/supabase/types";
+
+type PaymentRow = Database["public"]["Tables"]["payments"]["Row"];
+type JobRow = Database["public"]["Tables"]["jobs"]["Row"];
 
 export const listJobPayments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -18,13 +22,13 @@ export const listJobPayments = createServerFn({ method: "GET" })
       .select("total_owed")
       .eq("id", data.job_id)
       .single();
-    const totalPaid = (payments ?? []).reduce((s, p: any) => s + Number(p.amount ?? 0), 0);
+    const totalPaid = (payments ?? []).reduce((s: number, p: PaymentRow) => s + Number(p.amount ?? 0), 0);
     const byInsurance = (payments ?? [])
-      .filter((p: any) => p.payer_type === "insurance")
-      .reduce((s, p: any) => s + Number(p.amount ?? 0), 0);
+      .filter((p: PaymentRow) => p.payer_type === "insurance")
+      .reduce((s: number, p: PaymentRow) => s + Number(p.amount ?? 0), 0);
     const byClient = (payments ?? [])
-      .filter((p: any) => p.payer_type === "client")
-      .reduce((s, p: any) => s + Number(p.amount ?? 0), 0);
+      .filter((p: PaymentRow) => p.payer_type === "client")
+      .reduce((s: number, p: PaymentRow) => s + Number(p.amount ?? 0), 0);
     return {
       payments: payments ?? [],
       totalOwed: job?.total_owed ? Number(job.total_owed) : null,
