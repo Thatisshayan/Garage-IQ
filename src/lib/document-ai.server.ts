@@ -87,6 +87,10 @@ const ExtractSchemas = {
 } as const;
 
 type ExtractedFor<T extends keyof typeof ExtractSchemas> = z.infer<(typeof ExtractSchemas)[T]>;
+type ExtractedData = ExtractedFor<keyof typeof ExtractSchemas> & {
+  _parse_error?: string;
+  _raw?: string;
+};
 
 const MODEL = "google/gemini-3-flash-preview";
 const CLASSIFY_AUTO = 0.9;
@@ -193,7 +197,7 @@ export async function processDocumentNow(supabase: SupabaseClient<Database>, doc
     }
 
     // 2. Extract per type
-    let extracted: any = {};
+    let extracted: ExtractedData = {};
     if (docType !== "unclassified" && docType !== "other" && docType in ExtractSchemas) {
       const schema = ExtractSchemas[docType as keyof typeof ExtractSchemas];
       const extractPrompt = `Extract structured data for a ${docType}. Return strict JSON matching this schema (field_confidence is 0..1 per field):\n${JSON.stringify(schema._def, null, 0).slice(0, 800)}\nReturn only the JSON object.`;
@@ -232,10 +236,13 @@ export async function processDocumentNow(supabase: SupabaseClient<Database>, doc
         details: { confidence: conf, classification_reason: classification.reasoning ?? null },
       });
     }
-  } catch (e: any) {
+  } catch (e: unknown) {
     await supabase
       .from("documents")
-      .update({ processing_status: "error", processing_error: String(e?.message ?? e) })
+      .update({
+        processing_status: "error",
+        processing_error: String(e instanceof Error ? e.message : e),
+      })
       .eq("id", documentId);
   }
 }
@@ -244,7 +251,7 @@ async function autoLink(
   supabase: SupabaseClient<Database>,
   documentId: string,
   docType: DocType,
-  extracted: any,
+  extracted: ExtractedData,
 ) {
   const { data: doc } = await supabase.from("documents").select("*").eq("id", documentId).single();
   if (!doc) return;
@@ -377,7 +384,8 @@ export async function backfillFromDocument(
   const { data: doc } = await supabase.from("documents").select("*").eq("id", documentId).single();
   if (!doc || doc.job_id) return { created };
 
-  const ex = (doc.extracted_data as any)?.extracted ?? {};
+  const ex =
+    (doc.extracted_data as { extracted?: ExtractedData })?.extracted ?? ({} as ExtractedData);
   const customerName = (ex.customer_name || "").toString().trim();
   const vin = (ex.vin || "").toString().trim();
 
