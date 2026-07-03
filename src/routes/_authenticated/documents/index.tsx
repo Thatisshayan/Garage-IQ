@@ -104,10 +104,7 @@ function Documents() {
     <div className="p-8 space-y-6 max-w-[1400px] mx-auto">
       <header className="flex items-end justify-between gap-6">
         <div>
-          <div className="text-[11px] tick uppercase tracking-[0.24em] text-muted-foreground">
-            Document intelligence
-          </div>
-          <h1 className="font-display text-4xl font-semibold mt-2">Documents</h1>
+          <h1 className="font-display text-4xl font-semibold">Documents</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Drag in invoices, claims, POs, receipts. AI extracts and links automatically.
           </p>
