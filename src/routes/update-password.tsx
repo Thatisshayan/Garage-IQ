@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Wrench, ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 
 export const Route = createFileRoute("/update-password")({
   ssr: false,
@@ -56,9 +56,7 @@ function UpdatePasswordPage() {
         className="relative w-full max-w-sm mx-4"
       >
         <div className="flex items-center gap-2.5 mb-6">
-          <div className="w-9 h-9 rounded-md bg-[var(--gradient-ember)] grid place-items-center ember-glow">
-            <Wrench className="w-4 h-4 text-[var(--ember-foreground)]" strokeWidth={2.5} />
-          </div>
+          <img src="/icon-mark-light.png" alt="Garage IQ" className="w-9 h-9" />
           <div className="font-display text-base font-semibold">Garage IQ</div>
         </div>
 

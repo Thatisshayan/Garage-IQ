@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Wrench } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -58,9 +57,7 @@ function AuthPage() {
       {/* Left: brand panel */}
       <div className="hidden lg:flex relative w-1/2 flex-col justify-between p-12 border-r border-border">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-md bg-[var(--gradient-ember)] grid place-items-center ember-glow">
-            <Wrench className="w-4 h-4 text-[var(--ember-foreground)]" strokeWidth={2.5} />
-          </div>
+          <img src="/icon-mark-light.png" alt="Garage IQ" className="w-9 h-9" />
           <div>
             <div className="font-display text-base font-semibold leading-none">Garage IQ</div>
             <div className="text-[10px] tick text-muted-foreground tracking-[0.2em] mt-1">
@@ -112,9 +109,7 @@ function AuthPage() {
           className="w-full max-w-sm"
         >
           <div className="lg:hidden flex items-center gap-2.5 mb-6">
-            <div className="w-9 h-9 rounded-md bg-[var(--gradient-ember)] grid place-items-center ember-glow">
-              <Wrench className="w-4 h-4 text-[var(--ember-foreground)]" strokeWidth={2.5} />
-            </div>
+            <img src="/icon-mark-light.png" alt="Garage IQ" className="w-9 h-9" />
             <div className="font-display text-base font-semibold">Garage IQ</div>
           </div>
 

@@ -23,7 +23,6 @@ import {
   Bot,
   Inbox,
   LogOut,
-  Wrench,
   Sunrise,
   Smartphone,
   FileCheck2,
@@ -64,9 +63,8 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
     <>
       <div className="relative px-5 pt-5 pb-4 border-b border-sidebar-border">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-md bg-[var(--gradient-ember)] grid place-items-center ember-glow">
-            <Wrench className="w-4 h-4 text-[var(--ember-foreground)]" strokeWidth={2.5} />
-          </div>
+          <img src="/icon-mark-light.png" alt="Garage IQ" className="w-8 h-8" />
+
           <div>
             <div className="font-display text-[15px] font-semibold leading-none">Garage IQ</div>
             <div className="text-[10px] tick text-muted-foreground tracking-[0.18em] mt-1">
