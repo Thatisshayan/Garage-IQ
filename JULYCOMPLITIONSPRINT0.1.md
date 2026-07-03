@@ -533,17 +533,17 @@ No other gaps. Sprint 0.6 is legitimately complete on the engineering side — t
 
 ### Phase 30 — Commit Sprint 0.6's Work (do this first — nothing below can happen without it)
 
-- [ ] Review the working-tree diff one more time (`git status`, `git diff`) — it's already been verified against this document's claims, so this is a final sanity pass, not a re-audit.
-- [ ] Stage and commit: the RLS migration, `SECURITY-DECISIONS.md`, `AGENTS.md`, the four `*.functions.ts` files with `created_by`/`assigned_to` wiring, and the search page hint. Use a commit message that reflects Sprint 0.6 (e.g. `feat: Phase 20-25 — per-user RLS migration, search consolidation docs, any-policy`).
-- [ ] Commit this sprint document (`JULYCOMPLITIONSPRINT0.1.md`) itself, so the historical record ships with the code it describes.
-- [ ] Push to `main` and confirm GitHub Actions CI goes green on the pushed commit (not just local).
+- [x] Review the working-tree diff one more time (`git status`, `git diff`) — it's already been verified against this document's claims, so this is a final sanity pass, not a re-audit. **Done (2026-07-02): working tree was clean — Sprint 0.6's changes were already committed as `aa7f33f`.**
+- [x] Stage and commit: the RLS migration, `SECURITY-DECISIONS.md`, `AGENTS.md`, the four `*.functions.ts` files with `created_by`/`assigned_to` wiring, and the search page hint. **Confirmed done — commit `aa7f33f "feat: per-user RLS scoping, security docs, and Sprint 0.6 prep"` contains exactly this set of files.**
+- [x] Commit this sprint document (`JULYCOMPLITIONSPRINT0.1.md`) itself, so the historical record ships with the code it describes. **Confirmed — included in `aa7f33f`.**
+- [x] Push to `main` and confirm GitHub Actions CI goes green on the pushed commit (not just local). **Confirmed via `gh run list`: run 28619766128 on `aa7f33f` — status `completed`/`success`.**
 
 ### Phase 31 — Apply RLS Migration to Production (Sprint 0.6's Phase 26, now unblocked)
 
-- [ ] Apply `20260702120000_rls_per_user_scoping.sql` to the production Supabase project (`supabase db push` or dashboard SQL editor — whichever matches the existing migration deployment pattern for this project).
-- [ ] Spot-check cross-user isolation for real: create a customer as User A, log in as a different real User B account, confirm the customer is not visible via the app or a direct API call.
-- [ ] Confirm pre-migration rows (NULL `created_by`) behave as documented — invisible to all staff, not erroring.
-- [ ] If any staff genuinely need cross-visibility in practice (the trade-off `SECURITY-DECISIONS.md` already names), decide now whether that's acceptable or needs a lightweight reassignment mechanism as a fast-follow — don't let it become a silent complaint later.
+- [ ] **Deferred, reason: requires explicit human authorization on the specific production database before opencode can touch it.** `supabase link` succeeded (CLI reached the project using the token in `.env`), but `supabase migration list` showed **all 8** local migrations — not just the new RLS one — as unapplied per the CLI's tracking table. That's a signal the schema was likely pushed via dashboard/Lovable originally rather than tracked migrations, meaning a blind `supabase db push` risks replaying historical `CREATE TABLE`s against tables that already exist. A read-only schema-dump check to disambiguate this was attempted and correctly blocked by the session's auto-mode classifier — an `AskUserQuestion` prompt asking for go-ahead timed out with no response, and an automated "proceed anyway" fallback is explicitly not real consent for a production database write/read. **Action needed from Shayan:** either run `supabase db push` (or apply the migration via the dashboard SQL editor) yourself, or explicitly re-authorize opencode for this specific database in a live turn (not a timed-out prompt) so it can do the read-only check and targeted apply.
+- [ ] Spot-check cross-user isolation for real: create a customer as User A, log in as a different real User B account, confirm the customer is not visible via the app or a direct API call. **Blocked on the above.**
+- [ ] Confirm pre-migration rows (NULL `created_by`) behave as documented — invisible to all staff, not erroring. **Blocked on the above.**
+- [ ] If any staff genuinely need cross-visibility in practice (the trade-off `SECURITY-DECISIONS.md` already names), decide now whether that's acceptable or needs a lightweight reassignment mechanism as a fast-follow — don't let it become a silent complaint later. **Blocked on the above.**
 
 ### Phase 32 — Human Launch Validation (open since Sprint 0.2, carried forward every sprint since — do it now)
 
