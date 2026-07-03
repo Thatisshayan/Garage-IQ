@@ -94,6 +94,20 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
       throw new Error("Unauthorized: No user ID found in token");
     }
 
+    const { data: roles, error: roleError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.claims.sub);
+
+    if (roleError) {
+      throw new Error("Unauthorized: Could not verify staff role");
+    }
+
+    const isStaff = (roles ?? []).some((r) => r.role === "admin" || r.role === "staff");
+    if (!isStaff) {
+      throw new Error("Unauthorized: Account is not an approved staff member");
+    }
+
     return next({
       context: {
         supabase,

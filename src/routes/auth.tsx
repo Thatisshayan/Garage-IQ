@@ -17,7 +17,6 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,18 +31,8 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        toast.success("Account created — signing you in…");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
       navigate({ to: "/" });
     } catch (err: any) {
       toast.error(err.message ?? "Authentication failed");
@@ -130,16 +119,10 @@ function AuthPage() {
           </div>
 
           <div className="text-[11px] tick uppercase tracking-[0.24em] text-muted-foreground">
-            {mode === "signin" ? "// access" : "// onboarding"}
+            // access
           </div>
-          <h1 className="font-display text-3xl font-semibold mt-2">
-            {mode === "signin" ? "Sign in to the deck" : "Create your account"}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1.5">
-            {mode === "signin"
-              ? "Resume where the bay left off."
-              : "First user becomes shop admin."}
-          </p>
+          <h1 className="font-display text-3xl font-semibold mt-2">Sign in to the deck</h1>
+          <p className="text-sm text-muted-foreground mt-1.5">Resume where the bay left off.</p>
 
           <div className="panel p-6 mt-6 space-y-4">
             <form onSubmit={submit} className="space-y-3">
@@ -175,21 +158,19 @@ function AuthPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="bg-background/40"
                 />
-                {mode === "signin" && (
-                  <Link
-                    to="/reset-password"
-                    className="text-[11px] text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    Forgot password?
-                  </Link>
-                )}
+                <Link
+                  to="/reset-password"
+                  className="text-[11px] text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Forgot password?
+                </Link>
               </div>
               <Button
                 type="submit"
                 disabled={loading}
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 ember-glow"
               >
-                {loading ? "…" : mode === "signin" ? "Sign in →" : "Create account →"}
+                {loading ? "…" : "Sign in →"}
               </Button>
             </form>
             <div className="flex items-center gap-3 text-[10px] tick uppercase tracking-[0.2em] text-muted-foreground">
@@ -200,15 +181,9 @@ function AuthPage() {
             </Button>
           </div>
 
-          <button
-            type="button"
-            className="mt-4 text-xs text-muted-foreground hover:text-primary transition-colors w-full text-center"
-            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-          >
-            {mode === "signin"
-              ? "Need an account? Sign up →"
-              : "← Already have an account? Sign in"}
-          </button>
+          <p className="mt-4 text-xs text-muted-foreground w-full text-center">
+            New staff accounts are created by an admin — no public signup.
+          </p>
         </motion.div>
       </div>
     </div>
