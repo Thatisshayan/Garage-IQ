@@ -60,9 +60,7 @@ function AuthPage() {
           <img src="/icon-mark-light.png" alt="Garage IQ" className="w-9 h-9" />
           <div>
             <div className="font-display text-base font-semibold leading-none">Garage IQ</div>
-            <div className="text-[10px] tick text-muted-foreground tracking-[0.2em] mt-1">
-              GARAGE / v1.0
-            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">Operations platform</div>
           </div>
         </div>
 
@@ -71,32 +69,29 @@ function AuthPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="text-[11px] tick uppercase tracking-[0.24em] text-muted-foreground mb-4">
-            // pit-lane operations
-          </div>
-          <h2 className="font-display text-5xl font-semibold leading-[1.02] max-w-md">
+          <h2 className="font-display text-5xl font-semibold leading-[1.05] max-w-md">
             Every claim. Every car. <span className="ember-text">Zero friction.</span>
           </h2>
-          <p className="mt-4 text-sm text-muted-foreground max-w-sm">
-            AI-orchestrated repair workflows: OCR, classification, insurer state machines, and a
-            live ops deck — built for shops that move.
+          <p className="mt-5 text-[15px] leading-relaxed text-muted-foreground max-w-sm">
+            From intake to payout, Garage IQ handles the documents, the insurance back-and-forth,
+            and the paperwork — so your team can stay on the cars.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-3 max-w-md">
             {[
-              ["AUTO", "Doc intake"],
-              ["LIVE", "State machine"],
-              ["NL→SQL", "Assistant"],
+              ["Intake", "Snap a photo, done"],
+              ["Tracking", "Every job, live"],
+              ["Assistant", "Ask, don't dig"],
             ].map(([k, v]) => (
               <div key={k} className="panel p-3">
-                <div className="tick text-[10px] uppercase tracking-[0.18em] text-primary">{k}</div>
+                <div className="text-[11px] font-medium text-primary">{k}</div>
                 <div className="text-xs mt-1 text-muted-foreground">{v}</div>
               </div>
             ))}
           </div>
         </motion.div>
 
-        <div className="text-[10px] tick uppercase tracking-[0.2em] text-muted-foreground">
-          © {new Date().getFullYear()} Garage IQ · Secured garage infra
+        <div className="text-[11px] text-muted-foreground">
+          © {new Date().getFullYear()} Garage IQ
         </div>
       </div>
 
@@ -113,11 +108,10 @@ function AuthPage() {
             <div className="font-display text-base font-semibold">Garage IQ</div>
           </div>
 
-          <div className="text-[11px] tick uppercase tracking-[0.24em] text-muted-foreground">
-            // access
-          </div>
-          <h1 className="font-display text-3xl font-semibold mt-2">Sign in to the deck</h1>
-          <p className="text-sm text-muted-foreground mt-1.5">Resume where the bay left off.</p>
+          <h1 className="font-display text-3xl font-semibold mt-2">Welcome back</h1>
+          <p className="text-sm text-muted-foreground mt-1.5">
+            Sign in to pick up where you left off.
+          </p>
 
           <div className="panel p-6 mt-6 space-y-4">
             <form onSubmit={submit} className="space-y-3">
