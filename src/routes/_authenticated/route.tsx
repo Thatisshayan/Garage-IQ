@@ -67,12 +67,10 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
 
           <div>
             <div className="font-display text-[15px] font-semibold leading-none">Garage IQ</div>
-            <div className="text-[10px] tick text-muted-foreground tracking-[0.18em] mt-1">
-              GARAGE / v1.0
-            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">Operations platform</div>
           </div>
         </div>
-        <div className="mt-4 flex items-center gap-2 text-[10px] tick uppercase tracking-[0.16em] text-muted-foreground">
+        <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--signal)] pulse-dot" />
           Bay online
         </div>

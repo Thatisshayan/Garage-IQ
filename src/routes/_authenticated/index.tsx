@@ -38,15 +38,15 @@ function Dashboard() {
         className="flex items-end justify-between gap-6 pt-4"
       >
         <div>
-          <div className="flex items-center gap-2 text-[11px] tick uppercase tracking-[0.24em] text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="w-1.5 h-1.5 rounded-full bg-primary pulse-dot" />
-            Live · Bay status
+            Live
           </div>
           <h1 className="mt-3 font-display text-5xl font-semibold leading-[1.02]">
-            Garage <span className="ember-text">command deck</span>
+            Your shop, <span className="ember-text">at a glance</span>
           </h1>
           <p className="mt-2 text-sm text-muted-foreground max-w-lg">
-            Every claim, every car, every document — orchestrated.{" "}
+            Every job, claim, and document, tracked in real time.{" "}
             {new Date().toLocaleDateString(undefined, {
               weekday: "long",
               month: "long",
@@ -56,9 +56,7 @@ function Dashboard() {
           </p>
         </div>
         <div className="hidden md:flex flex-col items-end gap-1">
-          <div className="text-[10px] tick uppercase tracking-[0.24em] text-muted-foreground">
-            Active jobs
-          </div>
+          <div className="text-xs text-muted-foreground">Active jobs</div>
           <div className="tick text-5xl font-semibold ember-text">
             <Counter value={totalJobs} />
           </div>

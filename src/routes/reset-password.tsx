@@ -52,9 +52,6 @@ function ResetPasswordPage() {
           <div className="font-display text-base font-semibold">Garage IQ</div>
         </div>
 
-        <div className="text-[11px] tick uppercase tracking-[0.24em] text-muted-foreground">
-          // password recovery
-        </div>
         <h1 className="font-display text-3xl font-semibold mt-2">
           {sent ? "Check your email" : "Reset your password"}
         </h1>
