@@ -26,6 +26,8 @@ CREATE TRIGGER trg_claim_templates_updated_at
   BEFORE UPDATE ON public.claim_templates
   FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;
+SET LOCAL search_path TO public, extensions;
 CREATE INDEX IF NOT EXISTS idx_vehicles_vin_trgm ON public.vehicles USING gin (vin gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_vehicles_plate_trgm ON public.vehicles USING gin (license_plate gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_customers_phone_trgm ON public.customers USING gin (phone gin_trgm_ops);
