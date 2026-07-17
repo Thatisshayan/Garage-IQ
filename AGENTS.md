@@ -1,6 +1,47 @@
-# Garage IQ
+# Garage IQ — Agent Rules
 
-AI-powered garage management for car repair and insurance workflows.
+This file is the first-stop instruction set for any agent working in this repository.
+
+## Mandatory Read Order
+
+Before planning, editing, or reporting completion, every agent must read:
+
+1. **[Baseline Rules](#baseline)** — Foundational agent rules (adapted from RemoteCliControl)
+2. [README.md](./README.md) — Development setup and commands
+3. [SECURITY-DECISIONS.md](./SECURITY-DECISIONS.md) — Security posture documentation
+4. `.env.example` — All required environment variables
+5. The GARAGEIQ-specific conventions below
+
+## Baseline
+
+All repositories follow the foundational agent rules established in the RemoteCliControl project:
+
+- Keep docs findable and current while work is in progress
+- Do not claim completion without verification
+- Do not silently skip requested steps
+- Record deferred work in appropriate documentation
+- Keep the repo stable, review existing failures, and report what was pre-existing
+- Code changes must be actually applied and tested
+- Documentation must be updated in the same pass as code changes
+- Verification must be run (or concrete blockers reported)
+
+For full details, see [RemoteCliControl/AGENTS.md](../RemoteCliControl/AGENTS.md).
+
+## Garage IQ-Specific Context
+
+**Project**: AI-powered garage management for car repair and insurance workflows
+
+**Tech Stack**: Nuxt3 SSR, Bun, Vite, state machines, extraction schemas
+
+**Key Traits**:
+- Financial/payment-critical operations (high correctness requirement)
+- Business logic expressed as state machines (extensible, testable)
+- AI extraction pipeline with Zod validation
+- Rate limiting and error handling conventions (see below)
+
+---
+
+# Garage IQ
 
 ## Development
 
