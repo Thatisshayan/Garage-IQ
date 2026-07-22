@@ -11,7 +11,6 @@ import {
 } from "@/lib/payments.functions";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { Button } from "@/components/ui/button";
-import { Badge } from "./index";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Phone, Download, Trash2, Plus, DollarSign } from "lucide-react";
@@ -29,6 +28,15 @@ const STATUSES = [
   "awaiting_payment",
   "completed",
 ] as const;
+
+const LABELS: Record<string, string> = {
+  pending: "Pending",
+  awaiting_insurance: "Awaiting Insurance",
+  parts_ordered: "Parts Ordered",
+  in_progress: "In Progress",
+  awaiting_payment: "Awaiting Payment",
+  completed: "Completed",
+};
 
 function JobDetail() {
   const { jobId } = Route.useParams();
@@ -60,6 +68,8 @@ function JobDetail() {
       toast.success("Status updated");
       setReason("");
       qc.invalidateQueries({ queryKey: ["job", jobId] });
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -102,8 +112,42 @@ function JobDetail() {
             ← Jobs
           </Link>
           <h1 className="text-2xl font-semibold mt-1">{job.description || "Job"}</h1>
-          <div className="flex items-center gap-2 mt-2">
-            <Badge status={job.status} />
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <select
+              value={job.status}
+              onChange={(e) => {
+                const newStatus = e.target.value;
+                if (newStatus === job.status) return;
+                const reason = prompt(
+                  `Reason for moving to ${LABELS[newStatus] ?? newStatus}:`,
+                  "Status update",
+                );
+                if (!reason || reason.trim().length < 3) {
+                  toast.error("Reason must be at least 3 characters");
+                  return;
+                }
+                const prevStatus = newStatus;
+                setBusy(true);
+                override({ data: { id: jobId, status: newStatus as any, reason } })
+                  .then(() => {
+                    toast.success("Status updated");
+                    qc.invalidateQueries({ queryKey: ["job", jobId] });
+                    qc.invalidateQueries({ queryKey: ["jobs"] });
+                    qc.invalidateQueries({ queryKey: ["dashboard"] });
+                  })
+                  .catch((e: any) => toast.error(e.message))
+                  .finally(() => setBusy(false));
+              }}
+              disabled={busy}
+              className="text-xs bg-card border border-border rounded px-2 py-1 cursor-pointer font-medium"
+              style={{ borderColor: "var(--color-border)" }}
+            >
+              {STATUSES.map((st) => (
+                <option key={st} value={st}>
+                  {LABELS[st]}
+                </option>
+              ))}
+            </select>
             {job.flagged && <span className="text-xs text-amber-400">⚑ flagged</span>}
           </div>
         </div>

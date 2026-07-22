@@ -1,8 +1,21 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Camera, Loader2, Check, X, Car, FileText, ScanLine, ArrowRight } from "lucide-react";
+import {
+  Camera,
+  Loader2,
+  Check,
+  X,
+  Car,
+  FileText,
+  ScanLine,
+  ArrowRight,
+  Pencil,
+  Trash2,
+  List,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,13 +25,20 @@ import {
   findDuplicateCustomer,
   findVehicleByVin,
   submitMobileIntake,
+  updateMobileIntake,
+  deleteMobileIntake,
+  listPendingIntakes,
 } from "@/lib/intake.functions";
+import { getJob } from "@/lib/jobs.functions";
 import { getUploadUrl } from "@/lib/documents.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { IntakeInput } from "@/lib/schemas";
 
 export const Route = createFileRoute("/_authenticated/m/intake")({
   head: () => ({ meta: [{ title: "Quick Intake" }] }),
+  validateSearch: (search: Record<string, string | undefined>) => ({
+    edit: search?.edit as string | undefined,
+  }),
   component: MobileIntake,
 });
 
@@ -26,15 +46,20 @@ type Step = "vin" | "plate" | "vehicle" | "customer" | "photos" | "review";
 
 function MobileIntake() {
   const navigate = useNavigate();
+  const { edit: editJobId } = useSearch({ from: Route.id });
   const extractFn = useServerFn(extractVinFromPhoto);
   const decodeFn = useServerFn(decodeVin);
   const dupFn = useServerFn(findDuplicateCustomer);
   const vinDupFn = useServerFn(findVehicleByVin);
   const uploadUrlFn = useServerFn(getUploadUrl);
   const submitFn = useServerFn(submitMobileIntake);
+  const updateFn = useServerFn(updateMobileIntake);
+  const deleteFn = useServerFn(deleteMobileIntake);
+  const listPendingFn = useServerFn(listPendingIntakes);
 
   const [step, setStep] = useState<Step>("vin");
   const [busy, setBusy] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(!!editJobId);
   const [vin, setVin] = useState("");
   const [plate, setPlate] = useState("");
   const [vehicleId, setVehicleId] = useState("");
@@ -43,6 +68,15 @@ function MobileIntake() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
   const [vehicleMatches, setVehicleMatches] = useState<any[]>([]);
+  const [showPending, setShowPending] = useState(false);
+  const [pendingDeleting, setPendingDeleting] = useState<string | null>(null);
+
+  const isEditing = !!editJobId;
+
+  const { data: pendingIntakes, refetch: refetchPending } = useSuspenseQuery({
+    queryKey: ["pending-intakes"],
+    queryFn: () => listPendingFn(),
+  });
 
   const form = useForm<IntakeInput>({
     resolver: zodResolver(IntakeInput),
@@ -53,6 +87,41 @@ function MobileIntake() {
       photo_paths: [],
     },
   });
+
+  const getJobFn = useServerFn(getJob);
+
+  // Load existing job data when editing
+  useEffect(() => {
+    if (!editJobId) return;
+    (async () => {
+      try {
+        const data = await getJobFn({ data: { id: editJobId } });
+        const job = data.job;
+        if (!job) {
+          toast.error("Job not found");
+          return;
+        }
+        setCustomerId(job.customer_id ?? "");
+        setVehicleId(job.vehicle_id ?? "");
+        form.setValue("customer.name", job.customer?.name ?? "");
+        form.setValue("customer.phone", job.customer?.phone ?? "");
+        form.setValue("vehicle.make", job.vehicle?.make ?? "");
+        form.setValue("vehicle.model", job.vehicle?.model ?? "");
+        form.setValue("vehicle.year", job.vehicle?.year ?? null);
+        form.setValue("vehicle.color", job.vehicle?.color ?? "");
+        form.setValue("vehicle.vin", job.vehicle?.vin ?? "");
+        form.setValue("vehicle.license_plate", job.vehicle?.license_plate ?? "");
+        form.setValue("job.reported_problem", job.reported_problem ?? "");
+        form.setValue("job.odometer", job.odometer ?? null);
+        setVin(job.vehicle?.vin ?? "");
+        setPlate(job.vehicle?.license_plate ?? "");
+        setLoadingEdit(false);
+      } catch (e: any) {
+        toast.error("Failed to load intake: " + (e?.message ?? ""));
+        setLoadingEdit(false);
+      }
+    })();
+  }, [editJobId]);
 
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -176,20 +245,54 @@ function MobileIntake() {
   async function onSubmit(values: IntakeInput) {
     setBusy(true);
     try {
-      const r = await submitFn({
-        data: {
-          ...values,
-          customer: { ...values.customer, id: customerId || undefined },
-          vehicle: { ...values.vehicle, vin, license_plate: plate, id: vehicleId || undefined },
-          photo_paths: photoPaths,
-        },
-      });
-      toast.success("Job created");
-      navigate({ to: "/jobs/$jobId", params: { jobId: r.jobId } });
+      if (isEditing && editJobId) {
+        await updateFn({
+          data: {
+            ...values,
+            jobId: editJobId,
+            customer: { ...values.customer, id: customerId || undefined },
+            vehicle: { ...values.vehicle, vin, license_plate: plate, id: vehicleId || undefined },
+            photo_paths: photoPaths,
+          },
+        });
+        toast.success("Intake updated");
+        navigate({ to: "/jobs/$jobId", params: { jobId: editJobId } });
+      } else {
+        const r = await submitFn({
+          data: {
+            ...values,
+            customer: { ...values.customer, id: customerId || undefined },
+            vehicle: { ...values.vehicle, vin, license_plate: plate, id: vehicleId || undefined },
+            photo_paths: photoPaths,
+          },
+        });
+        toast.success("Job created");
+        navigate({ to: "/jobs/$jobId", params: { jobId: r.jobId } });
+      }
     } catch (e: any) {
-      toast.error(e?.message || "Failed to create job");
+      toast.error(e?.message || "Failed to save intake");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleDelete(jobId: string) {
+    if (
+      !confirm(
+        "Delete this intake? Customer & vehicle may also be removed if no other jobs reference them.",
+      )
+    )
+      return;
+    setPendingDeleting(jobId);
+    try {
+      await deleteFn({ data: { jobId } });
+      toast.success("Intake deleted");
+      refetchPending();
+      if (editJobId === jobId) navigate({ to: "/m/intake" });
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to delete");
+    } finally {
+      setPendingDeleting(null);
     }
   }
 
@@ -225,280 +328,372 @@ function MobileIntake() {
       </header>
 
       <main className="p-4 max-w-md mx-auto">
-        {step === "vin" && (
-          <Section title="VIN" subtitle="Snap the VIN plate (driver door or dash).">
-            <PhotoButton
-              icon={<ScanLine className="w-7 h-7" />}
-              label={vin ? `VIN: ${vin}` : "Tap to scan VIN"}
-              busy={busy}
-              onFile={handleVinPhoto}
-              done={!!vin}
-            />
-            <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mt-4 mb-1">
-              Or type manually
-            </label>
-            <input
-              value={vin}
-              onChange={(e) => setVin(e.target.value.toUpperCase())}
-              placeholder="17-character VIN"
-              maxLength={17}
-              className="w-full bg-card border border-border rounded-md px-3 py-3 font-mono text-base"
-            />
-            {vehicleMatches.length > 0 && (
-              <div className="mt-4 p-3 rounded-md border border-primary/40 bg-primary/5">
-                <div className="text-[10px] tick uppercase text-primary mb-2">Existing vehicle</div>
-                {vehicleMatches.map((v) => (
-                  <button
-                    key={v.id}
-                    onClick={() => {
-                      setVehicleId(v.id);
-                      setCustomerId(v.customer?.id ?? "");
-                      form.setValue("vehicle.make", v.make ?? "");
-                      form.setValue("vehicle.model", v.model ?? "");
-                      form.setValue("vehicle.year", v.year ?? null);
-                      form.setValue("vehicle.color", v.color ?? "");
-                      form.setValue("customer.name", v.customer?.name ?? "");
-                      form.setValue("customer.phone", v.customer?.phone ?? "");
-                      setPlate(v.license_plate ?? "");
-                      toast.success("Loaded existing vehicle & customer");
-                    }}
-                    className="block w-full text-left text-sm p-2 hover:bg-primary/10 rounded"
-                  >
-                    {v.year} {v.make} {v.model} — {v.customer?.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </Section>
-        )}
-
-        {step === "plate" && (
-          <Section title="License plate" subtitle="Snap the plate (optional but helps).">
-            <PhotoButton
-              icon={<ScanLine className="w-7 h-7" />}
-              label={plate ? `Plate: ${plate}` : "Tap to scan plate"}
-              busy={busy}
-              onFile={handlePlatePhoto}
-              done={!!plate}
-            />
-            <input
-              value={plate}
-              onChange={(e) => setPlate(e.target.value.toUpperCase())}
-              placeholder="Plate number"
-              className="mt-4 w-full bg-card border border-border rounded-md px-3 py-3 font-mono text-base"
-            />
-          </Section>
-        )}
-
-        {step === "vehicle" && (
-          <Section
-            title="Vehicle details"
-            subtitle={
-              vin ? "We tried to auto-fill from the VIN — confirm or fix." : "Enter what you can."
-            }
-          >
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
-                  Year
-                </label>
-                <input
-                  type="number"
-                  {...form.register("vehicle.year", { valueAsNumber: true })}
-                  className="w-full bg-card border border-border rounded-md px-3 py-3 font-mono text-base"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
-                  Color
-                </label>
-                <input
-                  {...form.register("vehicle.color")}
-                  className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
-                  Make
-                </label>
-                <input
-                  {...form.register("vehicle.make")}
-                  className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
-                  Model
-                </label>
-                <input
-                  {...form.register("vehicle.model")}
-                  className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
-                />
-              </div>
-            </div>
-            <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mt-4 mb-1">
-              Odometer (optional)
-            </label>
-            <div className="flex gap-2">
-              <input
-                {...form.register("job.odometer", { valueAsNumber: true })}
-                inputMode="numeric"
-                placeholder="km"
-                className="flex-1 bg-card border border-border rounded-md px-3 py-3 font-mono"
-              />
-              <button
-                onClick={() => fileInputs.current.odo?.click()}
-                disabled={busy}
-                className="px-4 rounded-md border border-border bg-card hover:border-primary"
-              >
-                {busy ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Camera className="w-4 h-4" />
-                )}
-              </button>
-              <input
-                ref={(el) => {
-                  fileInputs.current.odo = el;
-                }}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={(e) => e.target.files?.[0] && handleOdoPhoto(e.target.files[0])}
-              />
-            </div>
-          </Section>
-        )}
-
-        {step === "customer" && (
-          <Section title="Customer" subtitle="Name + phone. We'll check for duplicates.">
-            <div>
-              <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
-                Full name *
-              </label>
-              <input
-                {...form.register("customer.name")}
-                onBlur={checkCustomerDup}
-                className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
-              />
-              {form.formState.errors.customer?.name && (
-                <p className="text-[0.8rem] font-medium text-destructive mt-1">
-                  {form.formState.errors.customer.name.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
-                Phone
-              </label>
-              <input
-                type="tel"
-                {...form.register("customer.phone")}
-                onBlur={checkCustomerDup}
-                className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
-              />
-            </div>
-            {matches.length > 0 && !customerId && (
-              <div className="mt-3 p-3 rounded-md border border-amber-400/40 bg-amber-400/5">
-                <div className="text-[10px] tick uppercase text-amber-400 mb-2">
-                  Possible match — reuse?
-                </div>
-                {matches.map((m) => (
-                  <button
-                    key={m.id}
-                    onClick={() => {
-                      setCustomerId(m.id);
-                      form.setValue("customer.name", m.name);
-                      form.setValue("customer.phone", m.phone ?? "");
-                      setMatches([]);
-                      toast.success("Reusing existing customer");
-                    }}
-                    className="block w-full text-left text-sm p-2 hover:bg-amber-400/10 rounded"
-                  >
-                    {m.name} {m.phone && `· ${m.phone}`}
-                  </button>
-                ))}
-              </div>
-            )}
-            <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mt-5 mb-1">
-              What's the problem?
-            </label>
-            <textarea
-              {...form.register("job.reported_problem")}
-              rows={3}
-              placeholder="e.g. front bumper damage from parking-lot hit"
-              className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
-            />
-          </Section>
-        )}
-
-        {step === "photos" && (
-          <Section title="Damage photos" subtitle="Snap as many as you need.">
+        {/* Pending intakes list (only when not editing) */}
+        {!isEditing && pendingIntakes.length > 0 && (
+          <div className="mb-6">
             <button
-              onClick={() => fileInputs.current.damage?.click()}
-              disabled={busy}
-              className="w-full aspect-video rounded-lg border-2 border-dashed border-border bg-card flex flex-col items-center justify-center gap-2 hover:border-primary transition"
+              onClick={() => setShowPending(!showPending)}
+              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              {busy ? (
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              ) : (
-                <Camera className="w-8 h-8 text-primary" />
-              )}
-              <span className="text-sm font-medium">Add photos</span>
-              <span className="text-xs text-muted-foreground">{photoPaths.length} attached</span>
+              <List className="w-3.5 h-3.5" />
+              {showPending ? "Hide" : "Show"} pending intakes ({pendingIntakes.length})
             </button>
-            <input
-              ref={(el) => {
-                fileInputs.current.damage = el;
-              }}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              multiple
-              className="hidden"
-              onChange={(e) => e.target.files && handleDamagePhotos(e.target.files)}
-            />
-            {previewUrls.length > 0 && (
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                {previewUrls.map((u, i) => (
-                  <img
-                    key={i}
-                    src={u}
-                    alt=""
-                    className="aspect-square object-cover rounded-md border border-border"
-                  />
+            {showPending && (
+              <div className="mt-3 space-y-2">
+                {pendingIntakes.slice(0, 10).map((j: any) => (
+                  <div
+                    key={j.id}
+                    className="flex items-center justify-between p-3 rounded-md border border-border bg-card"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium truncate">
+                        {j.description || "(no description)"}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {j.customer?.name} — {j.vehicle?.make} {j.vehicle?.model}
+                      </div>
+                    </div>
+                    <div className="flex gap-1 ml-3 shrink-0">
+                      <button
+                        onClick={() => navigate({ to: "/m/intake", search: { edit: j.id } })}
+                        className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                        title="Edit intake"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(j.id)}
+                        disabled={pendingDeleting === j.id}
+                        className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-destructive"
+                        title="Delete intake"
+                      >
+                        {pendingDeleting === j.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 ))}
+                {pendingIntakes.length > 10 && (
+                  <div className="text-xs text-muted-foreground text-center pt-1">
+                    +{pendingIntakes.length - 10} more
+                  </div>
+                )}
               </div>
             )}
-          </Section>
+          </div>
         )}
 
-        {step === "review" && (
-          <Section title="Review" subtitle="Double-check before saving.">
-            <ReviewRow
-              icon={<Car />}
-              label="Vehicle"
-              value={
-                `${form.getValues("vehicle.year") || ""} ${form.getValues("vehicle.make")} ${form.getValues("vehicle.model")}`.trim() ||
-                "—"
-              }
-            />
-            <ReviewRow label="VIN" value={vin || "—"} mono />
-            <ReviewRow label="Plate" value={plate || "—"} mono />
-            <ReviewRow
-              label="Odometer"
-              value={form.getValues("job.odometer") ? `${form.getValues("job.odometer")} km` : "—"}
-            />
-            <ReviewRow
-              icon={<FileText />}
-              label="Customer"
-              value={form.getValues("customer.name") || "—"}
-            />
-            <ReviewRow label="Phone" value={form.getValues("customer.phone") || "—"} />
-            <ReviewRow label="Problem" value={form.getValues("job.reported_problem") || "—"} />
-            <ReviewRow label="Photos" value={`${photoPaths.length} attached`} />
-          </Section>
+        {/* Loading state for edit mode */}
+        {loadingEdit ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            <Section title="VIN" subtitle="Snap the VIN plate (driver door or dash).">
+              <PhotoButton
+                icon={<ScanLine className="w-7 h-7" />}
+                label={vin ? `VIN: ${vin}` : "Tap to scan VIN"}
+                busy={busy}
+                onFile={handleVinPhoto}
+                done={!!vin}
+              />
+              <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mt-4 mb-1">
+                Or type manually
+              </label>
+              <input
+                value={vin}
+                onChange={(e) => setVin(e.target.value.toUpperCase())}
+                placeholder="17-character VIN"
+                maxLength={17}
+                className="w-full bg-card border border-border rounded-md px-3 py-3 font-mono text-base"
+              />
+              {vehicleMatches.length > 0 && (
+                <div className="mt-4 p-3 rounded-md border border-primary/40 bg-primary/5">
+                  <div className="text-[10px] tick uppercase text-primary mb-2">
+                    Existing vehicle
+                  </div>
+                  {vehicleMatches.map((v) => (
+                    <button
+                      key={v.id}
+                      onClick={() => {
+                        setVehicleId(v.id);
+                        setCustomerId(v.customer?.id ?? "");
+                        form.setValue("vehicle.make", v.make ?? "");
+                        form.setValue("vehicle.model", v.model ?? "");
+                        form.setValue("vehicle.year", v.year ?? null);
+                        form.setValue("vehicle.color", v.color ?? "");
+                        form.setValue("customer.name", v.customer?.name ?? "");
+                        form.setValue("customer.phone", v.customer?.phone ?? "");
+                        setPlate(v.license_plate ?? "");
+                        toast.success("Loaded existing vehicle & customer");
+                      }}
+                      className="block w-full text-left text-sm p-2 hover:bg-primary/10 rounded"
+                    >
+                      {v.year} {v.make} {v.model} — {v.customer?.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </Section>
+
+            {step === "plate" && (
+              <Section title="License plate" subtitle="Snap the plate (optional but helps).">
+                <PhotoButton
+                  icon={<ScanLine className="w-7 h-7" />}
+                  label={plate ? `Plate: ${plate}` : "Tap to scan plate"}
+                  busy={busy}
+                  onFile={handlePlatePhoto}
+                  done={!!plate}
+                />
+                <input
+                  value={plate}
+                  onChange={(e) => setPlate(e.target.value.toUpperCase())}
+                  placeholder="Plate number"
+                  className="mt-4 w-full bg-card border border-border rounded-md px-3 py-3 font-mono text-base"
+                />
+              </Section>
+            )}
+
+            {step === "vehicle" && (
+              <Section
+                title="Vehicle details"
+                subtitle={
+                  vin
+                    ? "We tried to auto-fill from the VIN — confirm or fix."
+                    : "Enter what you can."
+                }
+              >
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
+                      Year
+                    </label>
+                    <input
+                      type="number"
+                      {...form.register("vehicle.year", { valueAsNumber: true })}
+                      className="w-full bg-card border border-border rounded-md px-3 py-3 font-mono text-base"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
+                      Color
+                    </label>
+                    <input
+                      {...form.register("vehicle.color")}
+                      className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
+                      Make
+                    </label>
+                    <input
+                      {...form.register("vehicle.make")}
+                      className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
+                      Model
+                    </label>
+                    <input
+                      {...form.register("vehicle.model")}
+                      className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
+                    />
+                  </div>
+                </div>
+                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mt-4 mb-1">
+                  Odometer (optional)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    {...form.register("job.odometer", { valueAsNumber: true })}
+                    inputMode="numeric"
+                    placeholder="km"
+                    className="flex-1 bg-card border border-border rounded-md px-3 py-3 font-mono"
+                  />
+                  <button
+                    onClick={() => fileInputs.current.odo?.click()}
+                    disabled={busy}
+                    className="px-4 rounded-md border border-border bg-card hover:border-primary"
+                  >
+                    {busy ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Camera className="w-4 h-4" />
+                    )}
+                  </button>
+                  <input
+                    ref={(el) => {
+                      fileInputs.current.odo = el;
+                    }}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && handleOdoPhoto(e.target.files[0])}
+                  />
+                </div>
+              </Section>
+            )}
+
+            {step === "customer" && (
+              <Section title="Customer" subtitle="Name + phone. We'll check for duplicates.">
+                <div>
+                  <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
+                    Full name *
+                  </label>
+                  <input
+                    {...form.register("customer.name")}
+                    onBlur={checkCustomerDup}
+                    className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
+                  />
+                  {form.formState.errors.customer?.name && (
+                    <p className="text-[0.8rem] font-medium text-destructive mt-1">
+                      {form.formState.errors.customer.name.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mb-1">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    {...form.register("customer.phone")}
+                    onBlur={checkCustomerDup}
+                    className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
+                  />
+                </div>
+                {matches.length > 0 && !customerId && (
+                  <div className="mt-3 p-3 rounded-md border border-amber-400/40 bg-amber-400/5">
+                    <div className="text-[10px] tick uppercase text-amber-400 mb-2">
+                      Possible match — reuse?
+                    </div>
+                    {matches.map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => {
+                          setCustomerId(m.id);
+                          form.setValue("customer.name", m.name);
+                          form.setValue("customer.phone", m.phone ?? "");
+                          setMatches([]);
+                          toast.success("Reusing existing customer");
+                        }}
+                        className="block w-full text-left text-sm p-2 hover:bg-amber-400/10 rounded"
+                      >
+                        {m.name} {m.phone && `· ${m.phone}`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <label className="block text-[10px] tick uppercase tracking-wider text-muted-foreground mt-5 mb-1">
+                  What's the problem?
+                </label>
+                <textarea
+                  {...form.register("job.reported_problem")}
+                  rows={3}
+                  placeholder="e.g. front bumper damage from parking-lot hit"
+                  className="w-full bg-card border border-border rounded-md px-3 py-3 text-base"
+                />
+              </Section>
+            )}
+
+            {step === "photos" && (
+              <Section title="Damage photos" subtitle="Snap as many as you need.">
+                <button
+                  onClick={() => fileInputs.current.damage?.click()}
+                  disabled={busy}
+                  className="w-full aspect-video rounded-lg border-2 border-dashed border-border bg-card flex flex-col items-center justify-center gap-2 hover:border-primary transition"
+                >
+                  {busy ? (
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  ) : (
+                    <Camera className="w-8 h-8 text-primary" />
+                  )}
+                  <span className="text-sm font-medium">Add photos</span>
+                  <span className="text-xs text-muted-foreground">
+                    {photoPaths.length} attached
+                  </span>
+                </button>
+                <input
+                  ref={(el) => {
+                    fileInputs.current.damage = el;
+                  }}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => e.target.files && handleDamagePhotos(e.target.files)}
+                />
+                {previewUrls.length > 0 && (
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    {previewUrls.map((u, i) => (
+                      <img
+                        key={i}
+                        src={u}
+                        alt=""
+                        className="aspect-square object-cover rounded-md border border-border"
+                      />
+                    ))}
+                  </div>
+                )}
+              </Section>
+            )}
+
+            {step === "review" && (
+              <Section title="Review" subtitle="Double-check before saving.">
+                {isEditing && (
+                  <div className="flex items-center justify-between p-3 rounded-md bg-primary/5 border border-primary/20 mb-4">
+                    <span className="text-xs font-medium text-primary">
+                      ✏️ Editing existing intake
+                    </span>
+                    <button
+                      onClick={() => editJobId && handleDelete(editJobId)}
+                      disabled={pendingDeleting === editJobId}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-destructive/10 text-destructive text-xs hover:bg-destructive/20 transition-colors"
+                    >
+                      {pendingDeleting === editJobId ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3 h-3" />
+                      )}
+                      Delete intake
+                    </button>
+                  </div>
+                )}
+                <ReviewRow
+                  icon={<Car />}
+                  label="Vehicle"
+                  value={
+                    `${form.getValues("vehicle.year") || ""} ${form.getValues("vehicle.make")} ${form.getValues("vehicle.model")}`.trim() ||
+                    "—"
+                  }
+                />
+                <ReviewRow label="VIN" value={vin || "—"} mono />
+                <ReviewRow label="Plate" value={plate || "—"} mono />
+                <ReviewRow
+                  label="Odometer"
+                  value={
+                    form.getValues("job.odometer") ? `${form.getValues("job.odometer")} km` : "—"
+                  }
+                />
+                <ReviewRow
+                  icon={<FileText />}
+                  label="Customer"
+                  value={form.getValues("customer.name") || "—"}
+                />
+                <ReviewRow label="Phone" value={form.getValues("customer.phone") || "—"} />
+                <ReviewRow label="Problem" value={form.getValues("job.reported_problem") || "—"} />
+                <ReviewRow label="Photos" value={`${photoPaths.length} attached`} />
+              </Section>
+            )}
+          </>
         )}
       </main>
 
@@ -526,7 +721,7 @@ function MobileIntake() {
             className="flex-1 px-4 py-3 rounded-md bg-primary text-primary-foreground font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}{" "}
-            Save & start job
+            {isEditing ? "Update job" : "Save & start job"}
           </button>
         )}
       </nav>

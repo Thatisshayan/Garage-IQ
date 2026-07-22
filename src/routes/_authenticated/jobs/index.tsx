@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
-import { listJobs } from "@/lib/jobs.functions";
+import { useState, useRef, useEffect } from "react";
+import { listJobs, overrideJobStatus } from "@/lib/jobs.functions";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/jobs/")({
   head: () => ({ meta: [{ title: "Jobs — Garage IQ" }] }),
@@ -30,8 +32,37 @@ const LABELS: Record<string, string> = {
 
 function JobsList() {
   const fn = useServerFn(listJobs);
-  const { data } = useSuspenseQuery({ queryKey: ["jobs"], queryFn: () => fn() });
+  const override = useServerFn(overrideJobStatus);
+  const qc = useQueryClient();
   const [view, setView] = useState<"kanban" | "table">("kanban");
+  const [changingId, setChangingId] = useState<string | null>(null);
+
+  // Auto-refresh every 30s so the kanban reflects changes from document AI etc.
+  const { data } = useSuspenseQuery({
+    queryKey: ["jobs"],
+    queryFn: () => fn(),
+    refetchInterval: 30_000,
+  });
+
+  async function quickChange(jobId: string, newStatus: string, description: string) {
+    setChangingId(jobId);
+    try {
+      await override({
+        data: {
+          id: jobId,
+          status: newStatus as any,
+          reason: `Kanban: moved to ${LABELS[newStatus] ?? newStatus}`,
+        },
+      });
+      toast.success(`Moved to ${LABELS[newStatus] ?? newStatus}`);
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setChangingId(null);
+    }
+  }
   return (
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
@@ -70,25 +101,45 @@ function JobsList() {
                 {data
                   .filter((j: any) => j.status === s)
                   .map((j: any) => (
-                    <Link
-                      key={j.id}
-                      to="/jobs/$jobId"
-                      params={{ jobId: j.id }}
-                      className="block p-2 rounded bg-background border border-border hover:border-primary text-sm"
-                    >
-                      <div className="font-medium truncate">
-                        {j.description || "(no description)"}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">{j.customer?.name}</div>
-                      <div className="text-xs font-mono text-muted-foreground">
-                        {j.vehicle?.license_plate ?? j.vehicle?.vin}
-                      </div>
-                      {j.flagged && (
-                        <div className="text-xs text-[oklch(0.769_0.188_70.08)] mt-1">
-                          ⚑ flagged
+                    <div key={j.id} className="group relative">
+                      <Link
+                        to="/jobs/$jobId"
+                        params={{ jobId: j.id }}
+                        className="block p-2 rounded bg-background border border-border hover:border-primary text-sm"
+                      >
+                        <div className="font-medium truncate">
+                          {j.description || "(no description)"}
                         </div>
-                      )}
-                    </Link>
+                        <div className="text-xs text-muted-foreground mt-1">{j.customer?.name}</div>
+                        <div className="text-xs font-mono text-muted-foreground">
+                          {j.vehicle?.license_plate ?? j.vehicle?.vin}
+                        </div>
+                        {j.flagged && (
+                          <div className="text-xs text-[oklch(0.769_0.188_70.08)] mt-1">
+                            ⚑ flagged
+                          </div>
+                        )}
+                      </Link>
+                      {/* Inline status change — appears on hover */}
+                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <select
+                          value=""
+                          disabled={changingId === j.id}
+                          onChange={(e) => {
+                            if (e.target.value) quickChange(j.id, e.target.value, j.description);
+                            e.target.value = "";
+                          }}
+                          className="text-[10px] bg-card border border-border rounded py-0.5 px-1 cursor-pointer"
+                        >
+                          <option value="">{changingId === j.id ? "..." : "\u2192"}</option>
+                          {STATUSES.filter((st) => st !== s).map((st) => (
+                            <option key={st} value={st}>
+                              {LABELS[st]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   ))}
               </div>
             </div>

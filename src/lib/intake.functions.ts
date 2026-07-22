@@ -194,3 +194,188 @@ export const submitMobileIntake = createServerFn({ method: "POST" })
 
     return { ok: true, jobId: job.id, customerId, vehicleId };
   });
+
+// ── Update ────────────────────────────────────────────────────────────────────
+
+const UpdateIntakeInput = IntakeInput.extend({
+  jobId: z.string().uuid(),
+});
+
+export const updateMobileIntake = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => UpdateIntakeInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { jobId, customer, vehicle, job, photo_paths } = data;
+
+    // 1. Update or create customer
+    let customerId = customer.id;
+    if (customerId) {
+      const { error } = await context.supabase
+        .from("customers")
+        .update({ name: customer.name, phone: customer.phone || null })
+        .eq("id", customerId);
+      if (error) throw new Error(error.message);
+    } else {
+      const { data: c, error } = await context.supabase
+        .from("customers")
+        .insert({
+          name: customer.name,
+          phone: customer.phone || null,
+          created_by: context.userId,
+        })
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      customerId = c.id;
+    }
+
+    // 2. Update or create vehicle
+    let vehicleId = vehicle.id;
+    if (vehicleId) {
+      const { error } = await context.supabase
+        .from("vehicles")
+        .update({
+          customer_id: customerId,
+          vin: vehicle.vin || null,
+          license_plate: vehicle.license_plate || null,
+          make: vehicle.make || null,
+          model: vehicle.model || null,
+          year: vehicle.year || null,
+          color: vehicle.color || null,
+        })
+        .eq("id", vehicleId);
+      if (error) throw new Error(error.message);
+    } else {
+      const { data: v, error } = await context.supabase
+        .from("vehicles")
+        .insert({
+          customer_id: customerId,
+          vin: vehicle.vin || null,
+          license_plate: vehicle.license_plate || null,
+          make: vehicle.make || null,
+          model: vehicle.model || null,
+          year: vehicle.year || null,
+          color: vehicle.color || null,
+          created_by: context.userId,
+        })
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      vehicleId = v.id;
+    }
+
+    // 3. Update job
+    const { error: jerr } = await context.supabase
+      .from("jobs")
+      .update({
+        customer_id: customerId,
+        vehicle_id: vehicleId,
+        description: job.reported_problem || "Mobile intake",
+        reported_problem: job.reported_problem || null,
+        odometer: job.odometer ?? null,
+      })
+      .eq("id", jobId);
+    if (jerr) throw new Error(jerr.message);
+
+    await context.supabase.from("job_status_events").insert({
+      job_id: jobId,
+      from_status: null,
+      to_status: null,
+      trigger: "manual",
+      reason: "Intake updated",
+      actor_id: context.userId,
+    });
+
+    // 4. Link any new photo documents
+    for (const path of photo_paths) {
+      await context.supabase.from("documents").insert({
+        storage_path: path,
+        file_name: path.split("/").pop() ?? path,
+        mime_type: "image/jpeg",
+        type: "other",
+        processing_status: "linked",
+        job_id: jobId,
+        customer_id: customerId,
+        vehicle_id: vehicleId,
+        uploaded_by: context.userId,
+      });
+    }
+
+    return { ok: true, jobId, customerId, vehicleId };
+  });
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+
+export const deleteMobileIntake = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ jobId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { jobId } = data;
+
+    // Fetch the job to know which customer/vehicle to potentially orphan
+    const { data: job } = await context.supabase
+      .from("jobs")
+      .select("customer_id, vehicle_id")
+      .eq("id", jobId)
+      .single();
+    if (!job) throw new Error("Job not found");
+
+    // Delete status events first (FK constraint)
+    await context.supabase.from("job_status_events").delete().eq("job_id", jobId);
+
+    // Delete documents linked to this job
+    await context.supabase.from("documents").delete().eq("job_id", jobId);
+
+    // Delete invoices linked to this job
+    await context.supabase.from("invoices").delete().eq("job_id", jobId);
+
+    // Delete payments linked to this job
+    await context.supabase.from("payments").delete().eq("job_id", jobId);
+
+    // Delete insurance claims linked to this job
+    await context.supabase.from("insurance_claims").delete().eq("job_id", jobId);
+
+    // Delete the job itself
+    await context.supabase.from("jobs").delete().eq("id", jobId);
+
+    // Orphan cleanup: delete vehicle if no other jobs reference it
+    if (job.vehicle_id) {
+      const { count: vehCount } = await context.supabase
+        .from("jobs")
+        .select("*", { count: "exact", head: true })
+        .eq("vehicle_id", job.vehicle_id);
+      if (vehCount === 0) {
+        await context.supabase.from("vehicles").delete().eq("id", job.vehicle_id);
+      }
+    }
+
+    // Orphan cleanup: delete customer if no other jobs reference it
+    if (job.customer_id) {
+      const { count: custCount } = await context.supabase
+        .from("jobs")
+        .select("*", { count: "exact", head: true })
+        .eq("customer_id", job.customer_id);
+      if (custCount === 0) {
+        await context.supabase.from("customers").delete().eq("id", job.customer_id);
+      }
+    }
+
+    return { ok: true };
+  });
+
+// ── List pending intakes ────────────────────────────────────────────────────
+
+export const listPendingIntakes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("jobs")
+      .select(
+        "id,status,description,reported_problem,odometer,created_at,customer:customers(id,name,phone),vehicle:vehicles(id,make,model,year,vin,license_plate,color)",
+      )
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
